@@ -1,13 +1,13 @@
 # Datahub Python SDK
 
-[![PyPI version](https://img.shields.io/pypi/v/pydatahub.svg?style=flat-square)](https://pypi.python.org/pypi/pydatahub) [![Docs](https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat-square)](http://pydatahub.alibaba.net/pydatahub-docs/) [![License](https://img.shields.io/pypi/l/pydatahub.svg?style=flat-square)](https://github.com/aliyun/aliyun-odps-python-sdk/blob/master/License) ![Implementation](https://img.shields.io/pypi/implementation/pydatahub.svg?style=flat-square)
+[![PyPI version](https://img.shields.io/pypi/v/pydatahub.svg?style=flat-square)](https://pypi.python.org/pypi/pydatahub) [![Docs](https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat-square)](http://pydatahub.alibaba.net/pydatahub-docs/) [![License](https://img.shields.io/pypi/l/pydatahub.svg?style=flat-square)](https://github.com/aliyun/aliyun-datahub-sdk-python/blob/master/License) ![Implementation](https://img.shields.io/pypi/implementation/pydatahub.svg?style=flat-square)
 
 <div align="center">
   <img src="http://pydatahub.readthedocs.io/zh_CN/latest/_static/PyDatahub.png"><br><br>
 </div>
 -----------------
 
-Elegent way to access ODPS API. [Documentation](http://pydatahub.readthedocs.io/zh_CN/latest/)
+Elegent way to access Datahub Python SDK API. [Documentation](http://pydatahub.readthedocs.io/zh_CN/latest/)
 
 ## Installation
 

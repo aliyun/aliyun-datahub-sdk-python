@@ -13,7 +13,7 @@ Datahub Python SDK
 
 --------------
 
-Elegent way to access ODPS API.
+Elegent way to access Datahub Python SDK API.
 `Documentation <http://pydatahub.readthedocs.io/zh_CN/latest/>`__
 
 Installation
@@ -169,6 +169,6 @@ Licensed under the `Apache License
 .. |Docs| image:: https://img.shields.io/badge/docs-latest-brightgreen.svg?style=flat-square
    :target: http://pydatahub.alibaba.net/pydatahub-docs/
 .. |License| image:: https://img.shields.io/pypi/l/pydatahub.svg?style=flat-square
-   :target: https://github.com/aliyun/aliyun-odps-python-sdk/blob/master/License
+   :target: https://github.com/aliyun/aliyun-datahub-sdk-python/blob/master/License
 .. |Implementation| image:: https://img.shields.io/pypi/implementation/pydatahub.svg?style=flat-square
 
