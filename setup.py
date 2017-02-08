@@ -60,7 +60,7 @@ setuptools.setup(
     long_description=long_description,
     author='andy.xs',
     author_email='helloworld.xs@foxmail.com',
-    url='http://gitlab.alibaba-inc.com/data-hub/datahub-sdk-python',
+    url='https://github.com/aliyun/aliyun-datahub-sdk-python',
     packages=setuptools.find_packages(exclude=('unittest')),
     install_requires=requirements,
     license='Apache License 2.0'
