@@ -3,16 +3,6 @@ Datahub Python SDK
 
 |PyPI version| |Docs| |License| |Implementation|
 
-.. raw:: html
-
-   <div align="center">
-
-.. raw:: html
-
-   </div>
-
---------------
-
 Elegent way to access Datahub Python SDK API.
 `Documentation <http://pydatahub.readthedocs.io/zh_CN/latest/>`__
 

@@ -47,12 +47,17 @@ with open('requirements.txt') as f:
 if PY26:
     requirements.append('simplejson>=2.1.0')
 
+long_description = None
+if os.path.exists('README.rst'):
+    with open('README.rst') as f:
+        long_description = f.read()
+
 setuptools.setup(
     name='pydatahub',
     version=version_ns['__version__'],
     keywords='pydatahub, python, aliyun, datahub, sdk',
     description='Datahub Python SDK',
-    long_description='Datahub Python SDK',
+    long_description=long_description,
     author='andy.xs',
     author_email='helloworld.xs@foxmail.com',
     url='https://github.com/aliyun/aliyun-datahub-sdk-python',
