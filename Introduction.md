@@ -26,7 +26,7 @@ DataHub是 MaxCompute 提供的流式数据处理(Streaming Data)服务，它提
 <h2><span id="2.1">快速安装</span></h2>
 
 ```shell
-$ sudo pip install git+https://github.com/aliyun/aliyun-datahub-sdk-python.git
+$ sudo pip install pydatahub
 ```
 
 <h2><span id="2.2">源码安装</span></h2>
@@ -45,7 +45,7 @@ $ python -c "from datahub import DataHub"
 
 <h1><span id="3">基本概念</span></h1>
 
-详见: http://help.aliyun-inc.com/internaldoc/detail/47440.html
+详见: https://help.aliyun.com/document_detail/47440.html?spm=5176.product27797.3.2.VGxgya
 
 <h1><span id="4">准备工作</span></h1>
 

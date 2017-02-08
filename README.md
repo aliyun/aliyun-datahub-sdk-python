@@ -14,7 +14,7 @@ Elegent way to access Datahub Python SDK API. [Documentation](http://pydatahub.r
 The quick way:
 
 ```shell
-$ sudo pip install git+https://github.com/aliyun/aliyun-datahub-sdk-python.git
+$ sudo pip install pydatahub
 ```
 
 The dependencies will be installed automatically.
@@ -34,6 +34,7 @@ $ sudo python setup.py install
  * Python (>=2.6), including Python 3+, pypy, Python 2.7 recommended
  * setuptools (>=3.0)
  * requests (>=2.4.0)
+ * simplejson(>=3.3.0)
 
 ## Run Tests
 
@@ -119,21 +120,6 @@ RecordSchema {
 {"ShardId": "0", "Attributes": {"AK": "47"}, "HashKey": "", "PartitionKey": "", "Data": ["1", "yc1", "10.01", "true", "1455869335000000"]}
 >>> print record_list[0].get_attribute('AK')
 47
-```
-
-## API Docs
-
-Datahub Python SDK的API Doc使用Sphinx工具生成，所以第一步需要安装Sphinx
-
-```shell
-$ sudo pip install -U Sphinx
-```
-
-然后执行如下命令：
-
-```shell
-$ cd docs
-$ make html
 ```
 
 ## Contributing
