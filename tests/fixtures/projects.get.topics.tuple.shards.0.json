@@ -1,0 +1,21 @@
+{
+  "NextCursor": "20000000000000000000000000830010",
+  "RecordCount": 1,
+  "StartSeq": 0,
+  "Records": [
+    {
+      "SystemTime": 1526293795168,
+      "NextCursor": "20000000000000000000000000830010",
+      "Data": [
+        "1",
+        "yc1",
+        "10.01",
+        "true",
+        "1455869335000000"
+      ],
+      "Attributes": {
+        "string": "string"
+      }
+    }
+  ]
+}

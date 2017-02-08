@@ -1,0 +1,4 @@
+{
+  "ErrorCode": "MalformedRecord",
+  "ErrorMessage": "The record is not well-formed."
+}

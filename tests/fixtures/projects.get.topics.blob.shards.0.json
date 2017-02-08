@@ -1,0 +1,12 @@
+{
+  "NextCursor": "20000000000000000000000000140001",
+  "RecordCount": 1,
+  "StartSeq": 0,
+  "Records": [
+    {
+      "SystemTime": 1526292424292,
+      "NextCursor": "20000000000000000000000000140001",
+      "Data": "iVBORw0KGgoAAAANSUhEUgAAB5FrTVeMB4wHjAeMBD3nAgEU"
+    }
+  ]
+}

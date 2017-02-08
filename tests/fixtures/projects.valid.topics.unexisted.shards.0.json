@@ -1,0 +1,4 @@
+{
+  "ErrorCode": "NoSuchTopic",
+  "ErrorMessage": "The specified topic name does not exist."
+}

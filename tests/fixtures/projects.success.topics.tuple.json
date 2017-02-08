@@ -1,0 +1,9 @@
+{
+  "Comment": "tuple",
+  "CreateTime": 1525312823,
+  "LastModifyTime": 1525312823,
+  "Lifecycle": 7,
+  "RecordSchema": "{\"fields\":[{\"name\":\"bigint_field\",\"type\":\"BIGINT\"},{\"name\":\"string_field\",\"type\":\"STRING\"},{\"name\":\"double_field\",\"type\":\"DOUBLE\"},{\"name\":\"bool_field\",\"type\":\"BOOLEAN\"},{\"name\":\"event_time1\",\"type\":\"TIMESTAMP\"}]}",
+  "RecordType": "TUPLE",
+  "ShardCount": 3
+}

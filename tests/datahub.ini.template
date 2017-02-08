@@ -1,0 +1,21 @@
+[datahub]
+access_id =
+access_key =
+endpoint =
+
+meter_test_project_name =
+meter_test_topic_name =
+meter_test_shard_id =
+
+connector_test_project_name =
+connector_test_topic_name =
+
+[connector]
+project_name =
+table_name =
+odps_endpoint =
+tunnel_endpoint =
+access_id =
+access_key =
+type =
+column_fields =

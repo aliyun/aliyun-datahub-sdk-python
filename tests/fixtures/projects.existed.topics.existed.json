@@ -1,0 +1,4 @@
+{
+  "ErrorCode": "TopicAlreadyExist",
+  "ErrorMessage": "The specified topic already exists."
+}

@@ -1,0 +1,544 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# 'License'); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+import json
+import os
+
+from httmock import HTTMock, urlmatch, response
+
+from datahub import DataHub
+from datahub.exceptions import ResourceNotFoundException, InvalidOperationException, InvalidParameterException, \
+    LimitExceededException, DatahubException
+from datahub.models import ShardState
+
+_TESTS_PATH = os.path.abspath(os.path.dirname(__file__))
+_FIXTURE_PATH = os.path.join(_TESTS_PATH, '../fixtures')
+
+dh = DataHub('access_id', 'access_key', 'http://endpoint')
+
+
+@urlmatch(netloc=r'(.*\.)?endpoint')
+def datahub_api_mock(url, request):
+    path = url.path.replace('/', '.')[1:]
+    res_file = os.path.join(_FIXTURE_PATH, '%s.json' % path)
+    status_code = 200
+    content = {
+    }
+    headers = {
+        'Content-Type': 'application/json',
+        'x-datahub-request-id': 0
+    }
+    try:
+        with open(res_file, 'rb') as f:
+            content = json.loads(f.read().decode('utf-8'))
+            if 'ErrorCode' in content:
+                status_code = 500
+    except (IOError, ValueError) as e:
+        content['ErrorMessage'] = 'Loads fixture %s failed, error: %s' % (res_file, e)
+    return response(status_code, content, headers, request=request)
+
+
+class TestShard:
+
+    def test_wait_shards_ready_success(self):
+        project_name = 'wait'
+        topic_name = 'ready'
+        with HTTMock(datahub_api_mock):
+            dh.wait_shards_ready(project_name, topic_name)
+
+    def test_wait_shards_ready_timeout(self):
+        project_name = 'wait'
+        topic_name = 'unready'
+        try:
+            with HTTMock(datahub_api_mock):
+                dh.wait_shards_ready(project_name, topic_name, 1)
+        except DatahubException:
+            pass
+        else:
+            raise Exception('wait shards ready success with unready shard status!')
+
+    def test_wait_shards_ready_with_invalid_timeout(self):
+        project_name = 'wait'
+        topic_name = 'ready'
+        try:
+            dh.wait_shards_ready(project_name, topic_name, -12)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('wait shards ready success with invalid timeout!')
+
+    def test_wait_shards_ready_with_empty_project_name(self):
+        project_name = ''
+        topic_name = 'valid'
+        try:
+            dh.wait_shards_ready(project_name, topic_name)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('wait shards ready success with empty project name!')
+
+    def test_wait_shards_ready_with_empty_topic_name(self):
+        project_name = 'valid'
+        topic_name = ''
+        try:
+            dh.wait_shards_ready(project_name, topic_name)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('wait shards ready success with empty topic name!')
+
+    def test_wait_shards_ready_with_unexisted_project_name(self):
+        project_name = 'unexisted'
+        topic_name = 'valid'
+        try:
+            with HTTMock(datahub_api_mock):
+                dh.wait_shards_ready(project_name, topic_name)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('wait shards ready success with unexisted project name!')
+
+    def test_wait_shards_ready_with_unexisted_topic_name(self):
+        project_name = 'valid'
+        topic_name = 'unexisted'
+        try:
+            with HTTMock(datahub_api_mock):
+                dh.wait_shards_ready(project_name, topic_name)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('wait shards ready success with unexisted topic name!')
+
+    def test_list_shard_success(self):
+        project_name = 'success'
+        topic_name = 'success'
+        with HTTMock(datahub_api_mock):
+            result = dh.list_shard(project_name, topic_name)
+        print(result)
+        shard_list = result.shards
+        assert len(shard_list) == 4
+        assert shard_list[0].shard_id == '0'
+        assert shard_list[0].begin_hash_key == '00000000000000000000000000000000'
+        assert shard_list[0].end_hash_key == '55555555555555555555555555555555'
+        assert shard_list[0].left_shard_id == '4294967295'
+        assert shard_list[0].right_shard_id == '1'
+        assert shard_list[0].closed_time == ''
+        assert shard_list[0].state == ShardState.ACTIVE
+        assert shard_list[1].state == ShardState.CLOSED
+        assert shard_list[2].state == ShardState.OPENING
+        assert shard_list[3].state == ShardState.CLOSING
+        assert shard_list[0].parent_shard_ids == ['10', '11']
+        assert shard_list[1].parent_shard_ids == []
+
+    def test_list_shard_with_empty_project_name(self):
+        project_name = ''
+        topic_name = 'valid'
+
+        try:
+            dh.list_shard(project_name, topic_name)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('list shard success with empty project name!')
+
+    def test_list_shard_with_empty_topic_name(self):
+        project_name = 'valid'
+        topic_name = ''
+
+        try:
+            dh.list_shard(project_name, topic_name)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('list shard success with empty topic name!')
+
+    def test_list_shard_with_unexisted_project_name(self):
+        project_name = 'unexisted'
+        topic_name = 'valid'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                dh.list_shard(project_name, topic_name)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('list shard success with unexisted project name!')
+
+    def test_list_shard_with_unexisted_topic_name(self):
+        project_name = 'valid'
+        topic_name = 'unexisted'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                dh.list_shard(project_name, topic_name)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('list shard success with unexisted topic name!')
+
+    def test_split_shard_success(self):
+        project_name = 'split'
+        topic_name = 'success'
+        shard_id = '0'
+        split_key = '16666666666666666666666666666666'
+
+        with HTTMock(datahub_api_mock):
+            split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
+
+        new_shards = split_result.new_shards
+        assert len(new_shards) == 2
+        assert new_shards[0].shard_id == '3'
+        assert new_shards[0].begin_hash_key == '00000000000000000000000000000000'
+        assert new_shards[0].end_hash_key == '16666666666666666666666666666666'
+
+        assert new_shards[1].shard_id == '4'
+        assert new_shards[1].begin_hash_key == '16666666666666666666666666666666'
+        assert new_shards[1].end_hash_key == '55555555555555555555555555555555'
+
+    def test_split_shard_success_without_split_key(self):
+        project_name = 'split'
+        topic_name = 'default'
+        shard_id = '0'
+
+        with HTTMock(datahub_api_mock):
+            split_result = dh.split_shard(project_name, topic_name, shard_id)
+
+    def test_split_shard_with_invalid_state(self):
+        project_name = 'split'
+        topic_name = 'invalid_state'
+        shard_id = '0'
+        split_key = '16666666666666666666666666666666'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
+        except InvalidOperationException:
+            pass
+        else:
+            raise Exception('split shard success with invalid shard state!')
+
+    def test_split_shard_with_limit_exceeded(self):
+        project_name = 'split'
+        topic_name = 'limit_exceeded'
+        shard_id = '0'
+        split_key = '1'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
+        except LimitExceededException:
+            pass
+        else:
+            raise Exception('split shard success with limit exceeded!')
+
+    def test_split_shard_with_invalid_key(self):
+        project_name = 'split'
+        topic_name = 'invalid_key'
+        shard_id = '0'
+        split_key = '16666666666666666666666666666666'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('split shard success with invalid key range!')
+
+    def test_split_shard_with_empty_project_name(self):
+        project_name = ''
+        topic_name = 'valid'
+        shard_id = '0'
+        split_key = '16666666666666666666666666666666'
+
+        try:
+            split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('split shard success with empty project name!')
+
+    def test_split_shard_with_empty_topic_name(self):
+        project_name = 'valid'
+        topic_name = ''
+        shard_id = '0'
+        split_key = '16666666666666666666666666666666'
+
+        try:
+            split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('split shard success with empty topic name!')
+
+    def test_split_shard_with_empty_shard_id(self):
+        project_name = 'valid'
+        topic_name = 'valid'
+        shard_id = ''
+        split_key = '16666666666666666666666666666666'
+
+        try:
+            split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('split shard success with empty shard id!')
+
+    def test_split_shard_with_unexisted_project_name(self):
+        project_name = 'unexisted'
+        topic_name = 'valid'
+        shard_id = '0'
+        split_key = '16666666666666666666666666666666'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('split shard success with unexisted project name!')
+
+    def test_split_shard_with_unexisted_topic_name(self):
+        project_name = 'valid'
+        topic_name = 'unexisted'
+        shard_id = '0'
+        split_key = '16666666666666666666666666666666'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('split shard success with unexisted topic name!')
+
+    def test_split_shard_with_unexisted_shard_id(self):
+        project_name = 'valid'
+        topic_name = 'valid'
+        shard_id = '99'
+        split_key = '16666666666666666666666666666666'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('split shard success with unexisted shard id!')
+
+    def test_merge_shard_success(self):
+        project_name = 'merge'
+        topic_name = 'success'
+        shard_id = '0'
+        adj_shard_id = '1'
+
+        with HTTMock(datahub_api_mock):
+            merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+
+        assert merge_result.shard_id == '2'
+        assert merge_result.begin_hash_key == '00000000000000000000000000000000'
+        assert merge_result.end_hash_key == '55555555555555555555555555555555'
+
+    def test_merge_shard_with_invalid_state(self):
+        project_name = 'merge'
+        topic_name = 'invalid_state'
+        shard_id = '0'
+        adj_shard_id = '1'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except InvalidOperationException:
+            pass
+        else:
+            raise Exception('merge shard success with invalid shard state!')
+
+    def test_merge_shard_with_limit_exceeded(self):
+        project_name = 'merge'
+        topic_name = 'limit_exceeded'
+        shard_id = '0'
+        adj_shard_id = '1'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except LimitExceededException:
+            pass
+        else:
+            raise Exception('merge shard success with limit exceeded!')
+
+    def test_merge_shard_with_shards_not_adjacent(self):
+        project_name = 'merge'
+        topic_name = 'shards_not_adjacent'
+        shard_id = '0'
+        adj_shard_id = '2'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('merge shard success with shards not adjacent!')
+
+    def test_merge_shard_with_empty_project_name(self):
+        project_name = ''
+        topic_name = 'valid'
+        shard_id = '0'
+        adj_shard_id = '1'
+
+        try:
+            merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('merge shard success with empty project name!')
+
+    def test_merge_shard_with_empty_topic_name(self):
+        project_name = 'valid'
+        topic_name = ''
+        shard_id = '0'
+        adj_shard_id = '1'
+
+        try:
+            merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('merge shard success with empty topic name!')
+
+    def test_merge_shard_with_empty_shard_id(self):
+        project_name = 'valid'
+        topic_name = 'valid'
+        shard_id = ''
+        adj_shard_id = '1'
+
+        try:
+            merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('merge shard success with empty shard id!')
+
+    def test_merge_shard_with_empty_adj_shard_id(self):
+        project_name = 'valid'
+        topic_name = 'valid'
+        shard_id = '0'
+        adj_shard_id = ''
+
+        try:
+            merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('merge shard success with empty split key!')
+
+    def test_merge_shard_with_unexisted_project_name(self):
+        project_name = 'unexisted'
+        topic_name = 'valid'
+        shard_id = '0'
+        adj_shard_id = '1'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('merge shard success with unexisted project name!')
+
+    def test_merge_shard_with_unexisted_topic_name(self):
+        project_name = 'valid'
+        topic_name = 'unexisted'
+        shard_id = '0'
+        adj_shard_id = '1'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('merge shard success with unexisted topic name!')
+
+    def test_merge_shard_with_unexisted_shard_id(self):
+        project_name = 'valid'
+        topic_name = 'valid'
+        shard_id = '99'
+        adj_shard_id = '1'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('merge shard success with unexisted shard id!')
+
+    def test_merge_shard_with_unexisted_adj_shard_id(self):
+        project_name = 'valid'
+        topic_name = 'valid'
+        shard_id = '0'
+        adj_shard_id = '99'
+
+        try:
+            with HTTMock(datahub_api_mock):
+                merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
+        except ResourceNotFoundException:
+            pass
+        else:
+            raise Exception('merge shard success with unexisted adjacent shard id!')
+
+
+if __name__ == '__main__':
+    test = TestShard()
+    test.test_wait_shards_ready_success()
+    test.test_wait_shards_ready_timeout()
+    test.test_wait_shards_ready_with_invalid_timeout()
+    test.test_wait_shards_ready_with_empty_project_name()
+    test.test_wait_shards_ready_with_unexisted_project_name()
+    test.test_wait_shards_ready_with_unexisted_topic_name()
+    test.test_list_shard_success()
+    test.test_list_shard_with_empty_project_name()
+    test.test_list_shard_with_empty_topic_name()
+    test.test_list_shard_with_unexisted_project_name()
+    test.test_list_shard_with_unexisted_topic_name()
+    test.test_split_shard_success()
+    test.test_split_shard_with_invalid_state()
+    test.test_split_shard_with_invalid_key()
+    test.test_split_shard_with_limit_exceeded()
+    test.test_split_shard_with_empty_project_name()
+    test.test_split_shard_with_empty_topic_name()
+    test.test_split_shard_with_empty_shard_id()
+    test.test_split_shard_with_unexisted_project_name()
+    test.test_split_shard_with_unexisted_topic_name()
+    test.test_split_shard_with_unexisted_shard_id()
+    test.test_split_shard_success_without_split_key()
+    test.test_merge_shard_success()
+    test.test_merge_shard_with_invalid_state()
+    test.test_merge_shard_with_limit_exceeded()
+    test.test_merge_shard_with_shards_not_adjacent()
+    test.test_merge_shard_with_empty_project_name()
+    test.test_merge_shard_with_empty_topic_name()
+    test.test_merge_shard_with_unexisted_adj_shard_id()
+    test.test_merge_shard_with_empty_adj_shard_id()
+    test.test_merge_shard_with_unexisted_project_name()
+    test.test_merge_shard_with_unexisted_topic_name()
+    test.test_merge_shard_with_empty_shard_id()
+    test.test_merge_shard_with_unexisted_shard_id()
