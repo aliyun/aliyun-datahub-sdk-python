@@ -32,7 +32,7 @@
 
 .. code-block:: sh
 
-    $ sudo pip install git+https://github.com/aliyun/aliyun-datahub-sdk-python.git
+    $ sudo pip install pydatahub
 
 **注意** 这里PyDatahub的相关依赖包如果没有安装的话会自动安装。
 
