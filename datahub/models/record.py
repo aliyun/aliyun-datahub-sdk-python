@@ -454,8 +454,13 @@ class TupleRecord(Record):
 
     def encode_values(self):
         new_values = []
+        index = 0
         for val in self._values:
-            new_values.append(utils.to_str(val).lower())
+            if FieldType.BOOLEAN == self._fields[index].type:
+                new_values.append(utils.to_str(val).lower())
+            else:
+                new_values.append(utils.to_str(val))
+            index += 1
         return new_values
 
     def decode_values(self):
