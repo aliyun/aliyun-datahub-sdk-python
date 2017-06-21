@@ -304,7 +304,7 @@ class DataHub(object):
         cursor = Cursor(project_name=project_name, topic_name=topic_name, type=type, shard_id=shard_id)
         if CursorType.SYSTEM_TIME == type and system_time == 0:
             raise InvalidArgument('get SYSTEM_TIME cursor must provide system_time argument')
-            cursor.system_time = system_time
+        cursor.system_time = system_time
         self.restclient.post(restmodel=cursor)
         return cursor
 
