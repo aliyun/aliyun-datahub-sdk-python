@@ -18,9 +18,9 @@
 
 .. code-block:: sh
 
-    $ sudo pip install pydatahub
+    $ pip install pydatahub
 
-**注:** python3使用pip3,这里PyDatahub的相关依赖包如果没有安装的话会自动安装。
+**注:** 这里PyDatahub的相关依赖包如果没有安装的话会自动安装。
 
 源码安装
 --------
@@ -29,9 +29,15 @@
 
     $ git clone https://github.com/aliyun/aliyun-datahub-sdk-python.git
     $ cd aliyun-datahub-sdk-python
-    $ sudo python setup.py install
+    $ python setup.py install
 
-**注:** python3使用pip3。
+**注:** 没有网络的情况下可以通过如下方式安装依赖：
+
+.. code-block:: sh
+
+    $ cd dependency
+    $ pip install -r first.txt
+    $ pip install -r second.txt
 
 安装验证
 ========

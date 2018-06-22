@@ -11,10 +11,12 @@ PyDatahub: Datahub Python SDK
 Requirements:
    * setuptools (>=3.0)
    * requests (>=2.4.0)
-   * simplejson(>=3.3.0)
-   * six(>=1.1.0)
-   * enum34(>=1.1.5 for python_version < '3.4')
-
+   * simplejson (>=3.3.0)
+   * six (>=1.1.0)
+   * enum34 (>=1.1.5 for python_version < '3.4')
+   * crcmod (>=1.7)
+   * lz4 (>=2.0.0)
+   * cprotobuf (>=0.1.9)
 
 .. toctree::
    :maxdepth: 1

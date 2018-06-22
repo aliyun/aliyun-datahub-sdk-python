@@ -38,6 +38,8 @@
 
 .. code-block:: python
 
+    from datahub.models import RecordSchema, FieldType, Field
+
     try:
         # block等待所有shard状态ready
         dh.wait_shards_ready(project_name, topic_name)
@@ -58,17 +60,17 @@
 
         records = []
     
-        record0 = TupleRecord(schema=topic.record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
+        record0 = TupleRecord(schema=record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
         record0.shard_id = shards[0].shard_id
         record0.put_attribute('AK', '47')
         records.append(record0)
 
-        record1 = TupleRecord(schema=topic.record_schema)
+        record1 = TupleRecord(schema=record_schema)
         record1.values = [1, 'yc1', 10.01, True, 1455869335000000]
         record1.shard_id = shards[1].shard_id
         records.append(record1)
 
-        record2 = TupleRecord(schema=topic.record_schema)
+        record2 = TupleRecord(schema=record_schema)
         record2.set_value(0, 3)
         record2.set_value(1, 'yc3')
         record2.set_value('double_field', 10.03)
@@ -128,6 +130,7 @@ get_cursor接口返回类型是GetCursorResult类型的对象，它的成员curs
         print(topic_result)
     
         cursor_result = dh.get_cursor(project_name, topic_name, '0', CursorType.OLDEST)
+        cursor = cursor_result.cursor
         while True:
             get_result = dh.get_tuple_records(project_name, topic_name, '0', topic_result.record_schema, cursor, 10)
             for record in get_result.records:

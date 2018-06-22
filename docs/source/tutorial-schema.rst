@@ -32,6 +32,8 @@ schema是用来标明数据存储的名称和对应类型的，在创建tuple to
 
 .. code-block:: python
 
+    from datahub.models import RecordSchema, FieldType, Field
+
     record_schema1 = RecordSchema.from_lists(
         ['bigint_field'  , 'string_field'  , 'double_field'  , 'bool_field'     , 'event_time1'      ],
         [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP]

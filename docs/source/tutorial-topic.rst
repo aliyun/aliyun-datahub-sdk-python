@@ -34,7 +34,7 @@ Tuple类型Topic写入的数据是有格式的，需要指定Record Schema，目
     topic_name = 'tuple_topic_test_topic'
     shard_count = 3
     life_cycle = 7
-    record_type = RecordType.TUPLE
+
     record_schema = RecordSchema.from_lists(
         ['bigint_field',   'string_field',   'double_field',   'bool_field',      'time_field'       ],
         [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP]
@@ -61,7 +61,7 @@ Tuple类型Topic写入的数据是有格式的，需要指定Record Schema，目
 
     dh.append_field(project_name, topic_name, field_name, field_type)
 
-新增field必须是allow_null为True的，因此给出field_name和field_type参数。
+新增field必须是allow_null为True的，给出field_name和field_type作为参数即可，field_type为FieldType枚举类型。
 
 Blob Topic
 ==========
@@ -77,7 +77,7 @@ Blob类型Topic支持写入一块二进制数据作为一个Record，数据将�
     topic_name = 'blob_topic_test_topic'
     shard_count = 3
     life_cycle = 7
-    topic.record_type = RecordType.BLOB
+
     
     try:
         dh.create_blob_topic(project_name, topic_name, shard_count, life_cycle, 'comment')

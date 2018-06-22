@@ -58,7 +58,7 @@ ReplaceInto与IgnoreInto： ReplaceInto模式下，会使用replace into语句�
 
 创建es connector，connector_config是EsConnectorConfig类型的对象。其中proxy_mode表示是否使用代理模式，若未true将不会扫描es所有node，直接通过代理写入，vpc es必须使用该选项
 
-更多详细定义：
+更多connector相关详细定义：
 :ref:`connector`
 
 删除connector

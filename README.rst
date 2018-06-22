@@ -17,14 +17,6 @@ The quick way:
 
 The dependencies will be installed automatically.
 
-If network is not available, requirements are in dependency folder:
-
-.. code:: shell
-
-    $ cd dependency
-    $ pip install -r dependency.txt
-
-
 Or from source code:
 
 .. code:: shell
@@ -33,7 +25,15 @@ Or from source code:
     $ source pydatahub_env/bin/activate
     $ git clone <git clone URL> pydatahub
     $ cd pydatahub
-    $ sudo python setup.py install
+    $ python setup.py install
+
+If network is not available, requirements are in dependency folder:
+
+.. code:: shell
+
+    $ cd dependency
+    $ pip install -r first.txt
+    $ pip install -r second.txt
 
 Python Version
 -------------------
@@ -45,9 +45,12 @@ Dependencies
 
 -  setuptools (>=3.0)
 -  requests (>=2.4.0)
--  simplejson(>=3.3.0)
--  six(>=1.1.0)
--  enum34(>=1.1.5 for python_version < '3.4')
+-  simplejson (>=3.3.0)
+-  six (>=1.1.0)
+-  enum34 (>=1.1.5 for python_version < '3.4')
+-  crcmod (>=1.7)
+-  lz4 (>=2.0.0)
+-  cprotobuf (>=0.1.9)
 
 Run Tests
 ---------
