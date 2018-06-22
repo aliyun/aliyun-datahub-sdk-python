@@ -17,7 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+from .aliyun_account import AliyunAccount
 from .core import AccountType, Account
-from .AliyunAccount import AliyunAccount
 
 __all__ = ['AccountType', 'Account', 'AliyunAccount']

@@ -4,3 +4,11 @@ build
 dist
 pydatahub.egg-info
 docs/build
+.idea
+.pytest_cache
+venv*
+.tox
+.coverage
+.eggs
+tests/datahub.ini
+pydatahub_beta.egg-info

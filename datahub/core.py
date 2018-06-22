@@ -19,25 +19,9 @@
 
 from __future__ import absolute_import
 
-import os
-import time
-import json
-import re
-import traceback
-from collections import Iterable
+from .models import CompressFormat
+from .implement import DataHubJson, DataHubPB
 
-from .thirdparty import six
-from .auth import AliyunAccount
-from .utils import Logger, Path
-from .errors import *
-
-from .models import RestClient
-from .models import Project, Projects
-from .models import Topic, Topics
-from .models import ShardAction, ShardState, Shards
-from .models import Records
-from .models import MeteringInfo
-from .models import CursorType, Cursor
 
 class DataHub(object):
     """
@@ -52,188 +36,205 @@ class DataHub(object):
 
     To create an DataHub instance, access_id and access_key is required, and should ensure correctness,
     or ``SignatureNotMatch`` error will throw.
+
     :param access_id: Aliyun Access ID
     :param secret_access_key: Aliyun Access Key
     :param endpoint: Rest service URL
+    :param enable_pb: enable protobuf when put/get records, default value is False in version <= 2.11, default value will be True in version >= 2.12
+    :param compress_format: compress format
+    :type compress_format: :class:`datahub.models.compress.CompressFormat`
 
     :Example:
 
     >>> datahub = DataHub('**your access id**', '**your access key**', '**endpoint**')
+    >>> datahub_pb = DataHub('**your access id**', '**your access key**', '**endpoint**', enable_pb=True)
+    >>> datahub_lz4 = DataHub('**your access id**', '**your access key**', '**endpoint**', compress_format=CompressFormat.LZ4)
     >>>
-    >>> project = datahub.get_project('datahub_test')
+    >>> project_result = datahub.get_project('datahub_test')
     >>>
-    >>> print project is None
+    >>> print(project_result is None)
     >>>
     """
 
-    def __init__(self, access_id, access_key, endpoint=None, **kwds):
-        """
-        """
-        self.account = kwds.pop('account', None)
-        if self.account is None:
-            self.account = AliyunAccount(access_id=access_id, access_key=access_key)
-        self.endpoint = endpoint
-        self.restclient = RestClient(self.account, self.endpoint, **kwds)
+    def __init__(self, access_id, access_key, endpoint=None, enable_pb=False,
+                 compress_format=CompressFormat.NONE, **kwargs):
+        if enable_pb:
+            self._datahub_impl = DataHubPB(access_id, access_key, endpoint, compress_format, **kwargs)
+        else:
+            self._datahub_impl = DataHubJson(access_id, access_key, endpoint, compress_format, **kwargs)
 
-    def list_projects(self):
+    def list_project(self):
         """
-        List all projects
+        List all project names
 
         :return: projects in datahub server
-        :rtype: generator
-
-        .. seealso:: :class:`datahub.models.Projects`
+        :rtype: :class:`datahub.models.results.ListProjectResult`
         """
-        projects = Projects()
-        self.restclient.get(restmodel=projects)
-        return projects
+        return self._datahub_impl.list_project()
 
-    def get_project(self, name):
+    def create_project(self, project_name, comment):
+        """
+        Create a new project by given name and comment
+
+        :param project_name: project name
+        :param comment: description of project
+        :return: none
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is not valid
+        :raise: :class:`datahub.exceptions.ResourceExistException` if project is already existed
+        """
+        self._datahub_impl.create_project(project_name, comment)
+
+    def get_project(self, project_name):
         """
         Get a project by given name
 
-        :param name: project name
+        :param project_name: project name
         :return: the right project
-        :rtype: :class:`datahub.models.Project`
-        :raise: :class:`datahub.errors.NoSuchObjectException` if not exists
+        :rtype: :class:`datahub.models.GetProjectResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if project not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is empty
 
-        .. seealso:: :class:`datahub.models.Project`
+        .. see also:: :class:`datahub.models.Project`
         """
-        if not name:
-            raise InvalidArgument('project name is empty')
-        proj = Project(name=name)
-        self.restclient.get(restmodel=proj)
-        return proj
+        return self._datahub_impl.get_project(project_name)
 
-    def list_topics(self, project_name):
+    def delete_project(self, project_name):
+        """
+        Delete the project by given name
+
+        :param project_name: project name
+        :return: none
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is empty
+        """
+        self._datahub_impl.delete_project(project_name)
+
+    def list_topic(self, project_name):
         """
         Get all topics of a project
 
         :param project_name: project name
         :return: all topics of the project
-        :rtype: generator
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the project not exists
-
-        .. seealso:: :class:`datahub.models.Topics`
+        :rtype: :class:`datahub.models.ListTopicResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is empty
         """
-        if not project_name:
-            raise InvalidArgument('project name is empty')
-        topics = Topics(project_name=project_name)
-        self.restclient.get(restmodel=topics)
-        return topics
+        return self._datahub_impl.list_topic(project_name)
 
-    def create_topic(self, topic):
+    def create_blob_topic(self, project_name, topic_name, shard_count, life_cycle, comment):
         """
-        Create topic
+        Create blob topic
 
-        :param topic: a object instance of :class:`datahub.models.Topic`
+        :param project_name: project name
+        :param topic_name: topic name
+        :param shard_count: shard count
+        :param life_cycle: life cycle
+        :param comment: comment
         :return: none
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is empty; topic_name is not valid; life_cycle is not positive; record_schema is wrong type
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if project not existed
+        :raise: :class:`datahub.exceptions.ResourceExistException` if topic is already existed
         """
-        if not isinstance(topic, Topic):
-            raise InvalidArgument('argument topic type must be datahub.models.Topic')
-        self.restclient.post(restmodel=topic)
+        self._datahub_impl.create_blob_topic(project_name, topic_name, shard_count, life_cycle, comment)
 
-    def get_topic(self, name, project_name):
+    def create_tuple_topic(self, project_name, topic_name, shard_count, life_cycle, record_schema, comment):
+        """
+        Create tuple topic
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param shard_count: shard count
+        :param life_cycle: life cycle
+        :param record_schema: record schema for tuple record type
+        :type record_schema: :class:`datahub.models.RecordSchema`
+        :param comment: comment
+        :return: none
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is empty; topic_name is not valid; life_cycle is not positive; record_schema is wrong type
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if project not existed
+        :raise: :class:`datahub.exceptions.ResourceExistException` if topic is already existed
+        """
+        self._datahub_impl.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, record_schema, comment)
+
+    def get_topic(self, project_name, topic_name):
         """
         Get a topic
 
-        :param name: topic name
+        :param topic_name: topic name
         :param project_name: project name
-        :return: topic object
-        :rtype: :class:`datahub.models.Topic`
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the project or topic not exists
-
-        .. seealso:: :class:`datahub.models.Topic`
+        :return: topic info
+        :rtype: :class:`datahub.models.GetTopicResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the project name or topic name is empty
         """
-        if not name or not project_name:
-            raise InvalidArgument('topic or project name is empty')
-        topic = Topic(name=name, project_name=project_name)
-        self.restclient.get(restmodel=topic)
-        return topic
+        return self._datahub_impl.get_topic(project_name, topic_name)
 
-    def update_topic(self, name, project_name, life_cycle=0, comment=''):
+    def update_topic(self, project_name, topic_name, life_cycle, comment):
         """
         Update topic info, only life cycle and comment can be modified.
 
-        :param name: topic name
+        :param topic_name: topic name
         :param project_name: project name
         :param life_cycle: life cycle of topic
         :param comment: topic comment
         :return: none
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the project name or topic name is empty; life_cycle is not positive
         """
-        if 0 == life_cycle and '' == comment:
-            return
-        if not name or not project_name:
-            raise InvalidArgument('topic or project name is empty')
-        topic = Topic(name=name, project_name=project_name, life_cycle=life_cycle, comment=comment)
-        self.restclient.put(restmodel=topic)
+        self._datahub_impl.update_topic(project_name, topic_name, life_cycle, comment)
 
-    def delete_topic(self, name, project_name):
+    def delete_topic(self, project_name, topic_name):
         """
         Delete a topic
 
-        :param name: topic name
+        :param topic_name: topic name
         :param project_name: project name
         :return: none
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the project name or topic name is empty
         """
-        if not name or not project_name:
-            raise InvalidArgument('topic or project name is empty')
-        topic = Topic(name=name, project_name=project_name)
-        self.restclient.delete(restmodel=topic)
+        self._datahub_impl.delete_topic(project_name, topic_name)
 
-    def wait_shards_ready(self, project_name, topic_name, timeout=-1):
+    def append_field(self, project_name, topic_name, field_name, field_type):
+        """
+        Append field to a tuple topic
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param field_name: field name
+        :param field_type: field type
+        :type field_type: :class:`datahub.models.FieldType`
+        :return: none
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or field_name is empty; field_type is wrong type
+        """
+        self._datahub_impl.append_field(project_name, topic_name, field_name, field_type)
+
+    def wait_shards_ready(self, project_name, topic_name, timeout=30):
         """
         Wait all shard state in ``active`` or ``closed``.
-        It always be invoked when create a topic, and will be blocked and unitl all
+        It always be invoked when create a topic, and will be blocked and until all
         shards state in ``active`` or ``closed`` or timeout .
 
         :param project_name: project name
         :param topic_name: topic name
         :param timeout: -1 means it will be blocked until all shards state in ``active`` or ``closed``, else will be wait timeout seconds
-        :return: if all shards ready
-        :rtype: boolean
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the project or topic not exists
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the project name or topic name is empty; timeout < 0
+        :raise: :class:`datahub.exceptions.DatahubException` if timeout
         """
-        if not topic_name or not project_name:
-            raise InvalidArgument('topic or project name is empty')
-        iCostTime = 0
-        bNotReady = True
-        bTimeout = False
-        while bNotReady and not bTimeout:
-            bNotReady = False
-            shards = Shards(action=ShardAction.LIST, project_name=project_name, topic_name=topic_name)
-            self.restclient.get(restmodel=shards)
-            for shard in shards:
-                if shard.state not in (ShardState.ACTIVE, ShardState.CLOSED):
-                    Logger.logger.debug("project: %s, topic: %s, shard: %s state is %s, sleep 1s" %(project_name, topic_name, shard.shard_id, shard.state))
-                    bNotReady = True
-                    time.sleep(1)
-                    iCostTime += 1
-                    if timeout > 0 and iCostTime >= timeout:
-                        bTimeout = True
-                    break
+        self._datahub_impl.wait_shards_ready(project_name, topic_name, timeout)
 
-        return not bNotReady
-
-    def list_shards(self, project_name, topic_name):
+    def list_shard(self, project_name, topic_name):
         """
         List all shards of a topic
 
         :param project_name: project name
         :param topic_name: topic name
-        :return: all shards
-        :rtype: :class:`datahub.models.Shards`
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the project or topic not exists
-
-        .. seealso:: :class:`datahub.models.Shards`
+        :return: shards info
+        :rtype: :class:`datahub.models.ListTopicResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the project name or topic name is empty
         """
-        if not topic_name or not project_name:
-            raise InvalidArgument('topic or project name is empty')
-        shards = Shards(action=ShardAction.LIST, project_name=project_name, topic_name=topic_name)
-        self.restclient.get(restmodel=shards)
-        return shards
+        return self._datahub_impl.list_shard(project_name, topic_name)
 
     def merge_shard(self, project_name, topic_name, shard_id, adj_shard_id):
         """
@@ -243,70 +244,49 @@ class DataHub(object):
         :param topic_name: topic name
         :param shard_id: shard id
         :param adj_shard_id: adjacent shard id
-        :return: after merged shards
-        :rtype: :class:`datahub.models.Shards`
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the shard not exists
-
-        .. seealso:: :class:`datahub.models.Shards`
+        :return: shards info after merged
+        :rtype: :class:`datahub.models.MergeShardResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or shard not exists
+        :raise: :class:`datahub.exceptions.InvalidOperationException` if the shard is not active
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the shards not adjacent; project name, topic name, shard id or adjacent shard id is empty
+        :raise: :class:`datahub.exceptions.LimitExceededException` if merge shard operation limit exceeded
         """
-        if not topic_name or not project_name:
-            raise InvalidArgument('topic or project name is empty')
-        if not shard_id or not adj_shard_id:
-            raise InvalidArgument('shard id or adjacent shard id is empty')
-        shards = Shards(action=ShardAction.MERGE, project_name=project_name, topic_name=topic_name)
-        shards.set_mergeinfo(shard_id, adj_shard_id)
-        self.restclient.post(restmodel=shards)
-        return shards
+        return self._datahub_impl.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
 
-    def split_shard(self, project_name, topic_name, shard_id, split_key):
+    def split_shard(self, project_name, topic_name, shard_id, split_key=''):
         """
         Split shard
 
         :param project_name: project name
         :param topic_name: topic name
         :param shard_id: split shard id
-        :param split_key: split key
-        :return: after split shards
-        :rtype: :class:`datahub.models.Shards`
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the shard not exists
-
-        .. seealso:: :class:`datahub.models.Shards`
+        :param split_key: split key, if not given, choose the median
+        :return: shards info after split
+        :rtype: :class:`datahub.models.SplitShardResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or shard not exists
+        :raise: :class:`datahub.exceptions.InvalidOperationException` if the shard is not active
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the key range is invalid; project name, topic name or shard id is empty
+        :raise: :class:`datahub.exceptions.LimitExceededException` if split shard operation limit exceeded
         """
-        if not topic_name or not project_name:
-            raise InvalidArgument('topic or project name is empty')
-        if not shard_id or not split_key:
-            raise InvalidArgument('shard id or split key is empty')
-        shards = Shards(action=ShardAction.SPLIT, project_name=project_name, topic_name=topic_name)
-        shards.set_splitinfo(shard_id, split_key)
-        self.restclient.post(restmodel=shards)
-        return shards
+        return self._datahub_impl.split_shard(project_name, topic_name, shard_id, split_key)
 
-    def get_cursor(self, project_name, topic_name, type, shard_id, system_time=0):
+    def get_cursor(self, project_name, topic_name, shard_id, cursor_type, param=-1):
         """
         Get cursor.
-        When you invoke get_records first, you must be invoke it to get a cursor
+        When you invoke get_blob_records/get_tuple_records, you must be invoke it to get a cursor first
 
         :param project_name: project name
         :param topic_name: topic name
-        :param type: cursor type
         :param shard_id: shard id
-        :param system_time: if type=CursorType.SYSTEM_TIME, it must be set
-        :return: a cursor
-        :rtype: :class:`datahub.models.Cursor`
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the shard not exists
-
-        .. seealso:: :class:`datahub.models.CursorType`, :class:`datahub.models.Cursor`
+        :param cursor_type: cursor type
+        :type cursor_type: :class:`datahub.models.CursorType`
+        :param param: param is system time if cursor_type == CursorType.SYSTEM_TIME while sequence if cursor_type==CursorType.SEQUENCE
+        :return: cursor info
+        :rtype: :class:`datahub.models.GetCursorResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or shard not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the param is invalid; project_name, topic_name or shard_id is empty; cursor_type is wrong type; param is missing
         """
-        if not topic_name or not project_name:
-            raise InvalidArgument('topic or project name is empty')
-        if not shard_id or not type:
-            raise InvalidArgument('shard id or type is empty')
-        cursor = Cursor(project_name=project_name, topic_name=topic_name, type=type, shard_id=shard_id)
-        if CursorType.SYSTEM_TIME == type and system_time == 0:
-            raise InvalidArgument('get SYSTEM_TIME cursor must provide system_time argument')
-        cursor.system_time = system_time
-        self.restclient.post(restmodel=cursor)
-        return cursor
+        return self._datahub_impl.get_cursor(project_name, topic_name, shard_id, cursor_type, param)
 
     def put_records(self, project_name, topic_name, record_list):
         """
@@ -315,46 +295,57 @@ class DataHub(object):
         :param project_name: project name
         :param topic_name: topic name
         :param record_list: record list
-        :return: failed record indeies
-        :rtype: list
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the topic not exists
+        :type record_list: :class:`list`
+        :return: failed records info
+        :rtype: :class:`datahub.models.PutRecordsResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the record is not well-formed; project_name or topic_name is empty
+        :raise: :class:`datahub.exceptions.InvalidOperationException` if the shard is not active
+        :raise: :class:`datahub.exceptions.LimitExceededException` if query rate or throughput rate limit exceeded
+        :raise: :class:`datahub.exceptions.DatahubException` if crc is wrong in pb mode
 
-        .. seealso:: :class:`datahub.models.Record`
+        .. see also:: :class:`datahub.models.Record`
         """
-        if not topic_name or not project_name:
-            raise InvalidArgument('topic or project name is empty')
-        if not isinstance(record_list, list):
-            raise InvalidArgument('record list must be a List')
-        records = Records(project_name=project_name, topic_name=topic_name)
-        records.record_list = record_list
-        self.restclient.post(restmodel=records)
-        return records.failed_indexs
+        return self._datahub_impl.put_records(project_name, topic_name, record_list)
 
-    def get_records(self, topic, shard_id, cursor, limit_num=1):
+    def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num):
         """
         Get records from a topic
 
-        :param topic: a object instance of :class:`datahub.models.Topic`
+        :param project_name: project name
+        :param topic_name: topic name
         :param shard_id: shard id
         :param cursor: the cursor
-        :return: record list, record num and next cursor
-        :rtype: tuple
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the topic not exists
-
-        .. seealso:: :class:`datahub.models.Topic`, :class:`datahub.models.Cursor`
+        :param limit_num: record number need to read
+        :return: result include record list, start sequence, record num and next cursor
+        :rtype: :class:`datahub.models.GetRecordsResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic or shard not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the cursor is invalid; project_name, topic_name, shard_id, or cursor is empty
+        :raise: :class:`datahub.exceptions.DatahubException` if crc is wrong in pb mode
         """
-        if not shard_id:
-            raise InvalidArgument('shard id is empty')
-        if not isinstance(topic, Topic):
-            raise InvalidArgument('argument topic type must be datahub.models.Topic')
-        records = Records(project_name=topic.project_name, topic_name=topic.name, schema=topic.record_schema)
-        records.shard_id = shard_id
-        records.next_cursor = str(cursor)
-        records.limit_num = limit_num
-        self.restclient.post(restmodel=records)
-        return (records.record_list, records.record_num, records.next_cursor)
+        return self._datahub_impl.get_blob_records(project_name, topic_name, shard_id, cursor, limit_num)
 
-    def get_meteringinfo(self, project_name, topic_name, shard_id):
+    def get_tuple_records(self, project_name, topic_name, shard_id, record_schema, cursor, limit_num):
+        """
+        Get records from a topic
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param shard_id: shard id
+        :param record_schema: tuple record schema
+        :type record_schema: :class:`datahub.models.RecordSchema`
+        :param cursor: the cursor
+        :param limit_num: record number need to read
+        :return: result include record list, start sequence, record num and next cursor
+        :rtype: :class:`datahub.models.GetRecordsResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic or shard not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the cursor is invalid; project_name, topic_name, shard_id, or cursor is empty
+        :raise: :class:`datahub.exceptions.DatahubException` if crc is wrong in pb mode
+        """
+        return self._datahub_impl.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor,
+                                                    limit_num)
+
+    def get_metering_info(self, project_name, topic_name, shard_id):
         """
         Get a shard metering info
 
@@ -362,15 +353,295 @@ class DataHub(object):
         :param topic_name: topic name
         :param shard_id: shard id
         :return: the shard metering info
-        :rtype: :class:`datahub.models.MeteringInfo`
-        :raise: :class:`datahub.errors.NoSuchObjectException` if the topic not exists
-
-        .. seealso:: :class:`datahub.models.MeteringInfo`
+        :rtype: :class:`datahub.models.GetMeteringInfoResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or shard not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the project_name, topic_name or shard_id is empty
         """
-        if not project_name or not topic_name:
-            raise InvalidArgument('project or topic name is empty')
-        if not shard_id:
-            raise InvalidArgument('shard id is empty')
-        meteringInfo = MeteringInfo(project_name=project_name, topic_name=topic_name, shard_id=shard_id)
-        self.restclient.post(restmodel=meteringInfo)
-        return meteringInfo
+        return self._datahub_impl.get_metering_info(project_name, topic_name, shard_id)
+
+    def list_connector(self, project_name, topic_name):
+        """
+        Create a data connector
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :return: data connector names list
+        :rtype: :class:`datahub.models.ListConnectorResult`
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the project_name or topic_name is empty
+        """
+        return self._datahub_impl.list_connector(project_name, topic_name)
+
+    def create_connector(self, project_name, topic_name, connector_type, column_fields, config):
+        """
+        Create a data connector
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_type: connector type
+        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param column_fields: column fields
+        :type column_fields: :class:`list`
+        :param config: connector config
+        :type config: :class:`datahub.models.ConnectorConfig`
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceExistException` if connector is already existed
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the column field or config is invalid; project_name or topic_name is empty; connector_type or config is wrong type
+        """
+        self._datahub_impl.create_connector(project_name, topic_name, connector_type, column_fields, config)
+
+    def get_connector(self, project_name, topic_name, connector_type):
+        """
+        Get a data connector
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_type: connector type
+        :type connector_type: :class:`datahub.models.ConnectorType`
+        :return: data connector info
+        :rtype: :class:`datahub.models.GetConnectorResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type or config is wrong type
+        """
+        return self._datahub_impl.get_connector(project_name, topic_name, connector_type)
+
+    def delete_connector(self, project_name, topic_name, connector_type):
+        """
+        Delete a data connector
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_type: connector type
+        :type connector_type: :class:`datahub.models.ConnectorType`
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type is wrong type
+        """
+        self._datahub_impl.delete_connector(project_name, topic_name, connector_type)
+
+    def get_connector_shard_status(self, project_name, topic_name, connector_type, shard_id):
+        """
+        Get data connector shard status
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_type: connector type
+        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param shard_id: shard id
+        :return: data connector shard status
+        :rtype: :class:`datahub.models.results.GetConnectorShardStatusResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic, shard or connector not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or shard_id is empty; connector_type is wrong type
+        """
+        return self._datahub_impl.get_connector_shard_status(project_name, topic_name, connector_type, shard_id)
+
+    def reload_connector(self, project_name, topic_name, connector_type, shard_id=''):
+        """
+        Reload data connector by given shard id or reload all shards without any shard id given
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_type: connector type
+        :param shard_id: shard id
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or filed_name is empty; connector_type is wrong type
+        """
+        self._datahub_impl.reload_connector(project_name, topic_name, connector_type, shard_id)
+
+    def append_connector_field(self, project_name, topic_name, connector_type, field_name):
+        """
+        Append field to a connector
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_type: connector type
+        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param field_name: field name
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or filed_name is empty; connector_type is wrong type
+        """
+        self._datahub_impl.append_connector_field(project_name, topic_name, connector_type, field_name)
+
+    def init_and_get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids):
+        """
+        Init and get subscription offset
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param sub_id: subscription id
+        :param shard_ids: shard ids
+        :return: offset info
+        :rtype :class:`datahub.models.InitAndGetSubscriptionOffset`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name, sub_id or shard_id is empty
+        """
+        return self._datahub_impl.init_and_get_subscription_offset(project_name, topic_name, sub_id, shard_ids)
+
+    def get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids=None):
+        """
+        Get subscription offset
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param sub_id: subscription id
+        :param shard_ids: shard ids
+        :type shard_ids: :class:`list`
+        :return: offset info
+        :rtype: :class:`datahub.models.results.GetSubscriptionOffsetResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty
+        """
+        return self._datahub_impl.get_subscription_offset(project_name, topic_name, sub_id, shard_ids)
+
+    def update_subscription_offset(self, project_name, topic_name, sub_id, offsets):
+        """
+        Update subscription offset
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param sub_id: subscription id
+        :param offsets: offsets
+        :type offsets: :class:`dict`
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
+        :raise: :class:`datahub.exceptions.InvalidOperationException` if the offset session closed or offset version changed
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty; offsets is wrong type
+        """
+        self._datahub_impl.update_subscription_offset(project_name, topic_name, sub_id, offsets)
+
+    def get_connector_done_time(self, project_name, topic_name, connector_type):
+        """
+        Get connector done time
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_type: connector type
+        :type connector_type: :class:`datahub.models.ConnectorType`
+        """
+        return self._datahub_impl.get_connector_done_time(project_name, topic_name, connector_type)
+
+    # =======================================================
+    # internal api
+    # =======================================================
+
+    def update_connector_state(self, project_name, topic_name, connector_type, connector_state):
+        """
+        Update data connector state
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_type: connector type
+        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param connector_state: connector state
+        :type connector_state: :class:`datahub.models.ConnectorState`
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type or connector_state is wrong type
+        """
+        self._datahub_impl.update_connector_state(project_name, topic_name, connector_type, connector_state)
+
+    def create_subscription(self, project_name, topic_name, comment):
+        """
+        Create subscription to a topic
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param comment: comment for subscription
+        :return: create result contains subscription id
+        :rtype: :class:`datahub.models.results.CreateSubscriptionResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.LimitExceededException` if limit of subscription number is exceeded
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty
+        """
+        return self._datahub_impl.create_subscription(project_name, topic_name, comment)
+
+    def delete_subscription(self, project_name, topic_name, sub_id):
+        """
+        Delete subscription by subscription id
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param sub_id: subscription id
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty
+        """
+        self._datahub_impl.delete_subscription(project_name, topic_name, sub_id)
+
+    def get_subscription(self, project_name, topic_name, sub_id):
+        """
+        Get subscription
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param sub_id: subscription id
+        :return: subscription info
+        :rtype: :class:`datahub.models.results.GetSubscriptionResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty
+        """
+        return self._datahub_impl.get_subscription(project_name, topic_name, sub_id)
+
+    def update_subscription(self, project_name, topic_name, sub_id, comment):
+        """
+        Update subscription
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param sub_id: subscription id
+        :param comment: new comment
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty
+        """
+        self._datahub_impl.update_subscription(project_name, topic_name, sub_id, comment)
+
+    def update_subscription_state(self, project_name, topic_name, sub_id, state):
+        """
+        Update subscription state
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param sub_id: subscription id
+        :param state: new state
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty; state is wrong type
+        """
+        self._datahub_impl.update_subscription_state(project_name, topic_name, sub_id, state)
+
+    def list_subscription(self, project_name, topic_name, query_key, page_index, page_size):
+        """
+        Query subscription in range [start, end)
+
+        start = (page_index - 1) * page_size + 1
+
+        end = start + page_size
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param query_key: query key for search
+        :param page_index: page index
+        :param page_size: page size
+        :return: subscription info list
+        :rtype: :class:`datahub.models.results.ListSubscriptionResult`
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; page_index <= 0 or page_size < 0
+        """
+        return self._datahub_impl.list_subscription(project_name, topic_name, query_key, page_index, page_size)
+
+    def reset_subscription_offset(self, project_name, topic_name, sub_id, offsets):
+        """
+        Update subscription offset
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param sub_id: subscription id
+        :param offsets: offsets
+        :type: :class:`dict`
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty; offsets is wrong type
+        """
+        self._datahub_impl.reset_subscription_offset(project_name, topic_name, sub_id, offsets)

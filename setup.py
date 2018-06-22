@@ -18,6 +18,7 @@
 
 import os
 import sys
+
 import setuptools
 
 repo_root = os.path.dirname(os.path.abspath(__file__))
@@ -32,10 +33,9 @@ except NameError:
 version = sys.version_info
 PY2 = version[0] == 2
 PY3 = version[0] == 3
-PY26 = PY2 and version[1] == 6
 
-if PY2 and version[:2] < (2, 6):
-    raise Exception('Datahub Python SDK supports Python 2.6+ (including Python 3+).')
+if PY2 and version[:2] < (2, 7):
+    raise Exception('Datahub Python SDK supports Python 2.7+ (including Python 3.3+).')
 
 version_ns = {}
 execfile(os.path.join(repo_root, 'datahub', 'version.py'), version_ns)
@@ -44,8 +44,6 @@ requirements = []
 with open('requirements.txt') as f:
     requirements.extend(f.read().splitlines())
 
-if PY26:
-    requirements.append('simplejson>=2.1.0')
 
 long_description = None
 if os.path.exists('README.rst'):
@@ -61,7 +59,7 @@ setuptools.setup(
     author='andy.xs',
     author_email='helloworld.xs@foxmail.com',
     url='https://github.com/aliyun/aliyun-datahub-sdk-python',
-    packages=setuptools.find_packages(exclude=('unittest')),
+    packages=setuptools.find_packages(exclude='tests'),
     install_requires=requirements,
     license='Apache License 2.0'
 )

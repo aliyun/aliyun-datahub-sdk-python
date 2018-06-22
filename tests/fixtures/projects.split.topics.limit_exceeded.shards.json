@@ -1,0 +1,4 @@
+{
+  "ErrorCode": "LimitExceeded",
+  "ErrorMessage": "Split/Merge shard operation limit exceeded."
+}

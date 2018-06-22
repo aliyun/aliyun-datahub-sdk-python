@@ -17,10 +17,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from .rest import HTTPMethod, Headers, RestClient
-from .record import FieldType, Field, Schema, RecordSchema, RecordType, Record, BlobRecord, TupleRecord, Records
-from .project import Project, Projects
-from .topic import Topic, Topics
-from .shard import ShardState, ShardAction, Shard, Shards
-from .cursor import CursorType, Cursor
-from .meter import MeteringInfo
+from .schema import Field, RecordSchema, FieldType
+from .record import RecordType, Record, BlobRecord, TupleRecord, FailedRecord
+from .cursor import CursorType
+from .compress import CompressFormat
+from .shard import ShardState, Shard, ShardContext, ShardBase
+from .connector import ConnectorConfig, ConnectorShardStatus, AuthMode, ConnectorState, PartitionMode, \
+    OdpsConnectorConfig, DatabaseConnectorConfig, EsConnectorConfig, FcConnectorConfig, OssConnectorConfig, \
+    OtsConnectorConfig, ConnectorState, OtsConnectorConfig, ConnectorType
+from .subscription import OffsetBase, OffsetWithVersion, OffsetWithSession, SubscriptionState
+from .params import *
+from .results import *

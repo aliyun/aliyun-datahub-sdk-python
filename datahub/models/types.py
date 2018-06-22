@@ -19,76 +19,34 @@
 
 from __future__ import absolute_import
 
-import re
-import time
-import datetime
+import abc
 import decimal
 
-from ..thirdparty import six
-from .. import utils
+import six
 
+from . import FieldType
+from .. import utils
+from ..exceptions import InvalidParameterException
+
+
+@six.add_metaclass(abc.ABCMeta)
 class DataType(object):
     """
-    Abstract data type
+    Abstract singleton data type
     """
-    _singleton = True
-    __slots__ = 'nullable',
+    _instance = None
 
     def __new__(cls, *args, **kwargs):
-        if cls._singleton:
-            if not hasattr(cls, '_instance'):
-                cls._instance = object.__new__(cls)
-                cls._hash = hash(cls)
+        if not cls._instance:
+            cls._instance = super(DataType, cls).__new__(cls, *args, **kwargs)
             return cls._instance
         else:
             return object.__new__(cls)
 
-    def __init__(self, nullable=True):
-        self.nullable = nullable
-
-    def __call__(self, nullable=True):
-        return self._factory(nullable=nullable)
-
-    def _factory(self, nullable=True):
-        return type(self)(nullable=nullable)
-
-    def __ne__(self, other):
-        return not (self == other)
-
-    def __eq__(self, other):
-        return self._equals(other)
-
-    def _equals(self, other):
-        if self is other:
-            return True
-
-        other = validate_data_type(other)
-
-        if self.nullable != other.nullable:
-            return False
-        if type(self) == type(other):
-            return True
-        return isinstance(other, type(self))
-
-    def __hash__(self):
-        return self._hash
-
-    @property
-    def name(self):
-        return type(self).__name__.lower()
-
     def __repr__(self):
-        if self.nullable:
-            return self.name
-        return '{0}[non-nullable]'.format(self.name)
-
-    def __str__(self):
-        return self.name.upper()
+        return type(self).__name__.upper()
 
     def can_implicit_cast(self, other):
-        if isinstance(other, six.string_types):
-            other = validate_data_type(other)
-
         return isinstance(self, type(other))
 
     def can_explicit_cast(self, other):
@@ -100,25 +58,31 @@ class DataType(object):
 
     def _can_cast_or_throw(self, value, data_type):
         if not self.can_implicit_cast(data_type):
-            raise ValueError('Cannot cast value(%s) from type(%s) to type(%s)' % (
+            raise InvalidParameterException('Cannot cast value(%s) from type(%s) to type(%s)' % (
                 value, data_type, self))
 
-    def cast_value(self, value, data_type):
-        raise NotImplementedError
+    @abc.abstractmethod
+    def cast_type(self):
+        pass
 
-class DatahubPrimitive(DataType):
-    __slots__ = ()
+    def cast_value(self, value, data_type):
+        self._can_cast_or_throw(value, data_type)
+        builtin_type = self.cast_type()
+        try:
+            if callable(builtin_type):
+                ret = builtin_type(value)
+            else:
+                raise InvalidParameterException("builtin type not callable")
+        except ValueError as e:
+            raise InvalidParameterException(e)
+        return ret
+
 
 # Bigint
-class Bigint(DatahubPrimitive):
-    __slots__ = ()
-
+class Bigint(DataType):
     _bounds = (-9223372036854775808, 9223372036854775807)
 
     def can_implicit_cast(self, other):
-        if isinstance(other, six.string_types):
-            other = validate_data_type(other)
-
         if isinstance(other, (Double, String, Timestamp)):
             return True
         return super(Bigint, self).can_implicit_cast(other)
@@ -129,40 +93,41 @@ class Bigint(DatahubPrimitive):
         smallest, largest = self._bounds
         if smallest <= val <= largest:
             return True
-        raise ValueError('InvalidData: Bigint(%s) out of range' % val)
+        raise InvalidParameterException('InvalidData: Bigint(%s) out of range' % val)
 
-    def cast_value(self, value, data_type):
-        self._can_cast_or_throw(value, data_type)
+    def cast_type(self):
+        if six.PY2:
+            return long
+        return int
 
-        return long(value)
 
 # Double
-class Double(DatahubPrimitive):
-    __slots__ = ()
-
+class Double(DataType):
     def can_implicit_cast(self, other):
-        if isinstance(other, six.string_types):
-            other = validate_data_type(other)
-
         if isinstance(other, (Bigint, String)):
             return True
         return super(Double, self).can_implicit_cast(other)
 
-    def cast_value(self, value, data_type):
-        self._can_cast_or_throw(value, data_type)
+    def cast_type(self):
+        return float
 
-        return float(value)
+
+# Decimal
+class Decimal(DataType):
+    def can_implicit_cast(self, other):
+        if isinstance(other, (Bigint, String)):
+            return True
+        return super(Decimal, self).can_implicit_cast(other)
+
+    def cast_type(self):
+        return decimal.Decimal
+
 
 # String
-class String(DatahubPrimitive):
-    __slots__ = ()
-
+class String(DataType):
     _max_length = 1 * 1024 * 1024  # 1M
 
     def can_implicit_cast(self, other):
-        if isinstance(other, six.string_types):
-            other = validate_data_type(other)
-
         if isinstance(other, (Bigint, Double, Timestamp)):
             return True
         return super(String, self).can_implicit_cast(other)
@@ -172,24 +137,17 @@ class String(DatahubPrimitive):
             return True
         if len(val) <= self._max_length:
             return True
-        raise ValueError("InvalidData: Length of string(%s) is more than 1M.'" % val)
+        raise InvalidParameterException("InvalidData: Length of string(%s) is more than 1M.'" % val)
 
-    def cast_value(self, value, data_type):
-        self._can_cast_or_throw(value, data_type)
+    def cast_type(self):
+        return utils.to_text
 
-        val = utils.to_text(value)
-        return val
 
-#Timestamp
-class Timestamp(DatahubPrimitive):
-    __slots__ = ()
-
-    _ticks_bound = (-62135798400000000,253402271999000000)
+# Timestamp
+class Timestamp(DataType):
+    _ticks_bound = (-62135798400000000, 253402271999000000)
 
     def can_implicit_cast(self, other):
-        if isinstance(other, six.string_types):
-            other = validate_data_type(other)
-
         if isinstance(other, String):
             return True
         return super(Timestamp, self).can_implicit_cast(other)
@@ -201,99 +159,97 @@ class Timestamp(DatahubPrimitive):
         smallest, largest = self._ticks_bound
         if smallest <= val <= largest:
             return True
-        raise ValueError('InvalidData: Timestamp(%s) out of range' % val)
+        raise InvalidParameterException('InvalidData: Timestamp(%s) out of range' % val)
 
-    def cast_value(self, value, data_type):
-        self._can_cast_or_throw(value, data_type)
-        return long(value)
+    def cast_type(self):
+        if six.PY2:
+            return long
+        return int
+
 
 # Boolean
-class Boolean(DatahubPrimitive):
-    __slots__ = ()
+class Boolean(DataType):
 
-    def cast_value(self, value, data_type):
-        if isinstance(data_type, six.string_types):
-            data_type = validate_data_type(data_type)
+    def can_implicit_cast(self, other):
+        if isinstance(other, String):
+            return True
+        return super(Boolean, self).can_implicit_cast(other)
 
-        if isinstance(data_type, String):
-            if 'true' == value.lower():
-                return True
-            elif 'false' == value.lower():
-                return False
+    def cast_type(self):
+        return bool
 
-        self._can_cast_or_throw(value, data_type)
-        return value
 
-bigint = Bigint()
-double = Double()
-string = String()
-timestamp = Timestamp()
-boolean = Boolean()
+#####################################################################
+# above is 5 type defined to verify field value
+#####################################################################
 
-_datahub_primitive_data_types = dict(
-    [(t.name, t) for t in (
-        bigint, double, string, timestamp, boolean
-    )]
-)
-
-def validate_data_type(data_type):
-    if isinstance(data_type, DataType):
-        return data_type
-
-    if isinstance(data_type, six.string_types):
-        data_type = data_type.lower()
-        if data_type in _datahub_primitive_data_types:
-            return _datahub_primitive_data_types[data_type]
-
-    raise ValueError('Invalid data type: %s' % repr(data_type))
-
-integer_builtins = six.integer_types
 float_builtins = (float,)
+bool_builtins = (bool,)
+integer_builtins = six.integer_types if isinstance(six.integer_types, tuple) else (six.integer_types,)
+string_builtins = six.string_types if isinstance(six.string_types, tuple) else (six.string_types,)
+decimal_builtins = (decimal.Decimal,)
+
 try:
     import numpy as np
+
     integer_builtins += (np.integer,)
     float_builtins += (np.float,)
 except ImportError:
     pass
 
-_datahub_primitive_to_builtin_types = {
-    bigint: integer_builtins,
-    double: float_builtins,
-    string: six.string_types,
-    timestamp: integer_builtins,
-    boolean: bool
+bigint_type = Bigint()
+double_type = Double()
+string_type = String()
+timestamp_type = Timestamp()
+boolean_type = Boolean()
+decimal_type = Decimal()
+
+
+_datahub_types_dict = {
+    FieldType.BIGINT: bigint_type,
+    FieldType.DOUBLE: double_type,
+    FieldType.STRING: string_type,
+    FieldType.TIMESTAMP: timestamp_type,
+    FieldType.BOOLEAN: boolean_type,
+    FieldType.DECIMAL: decimal_type
+}
+
+_builtin_types_dict = {
+    bigint_type: integer_builtins,
+    double_type: float_builtins,
+    string_type: string_builtins,
+    timestamp_type: integer_builtins,
+    boolean_type: bool_builtins,
+    decimal_type: decimal_builtins
 }
 
 
-def infer_primitive_data_type(value):
-    for data_type, builtin_types in six.iteritems(_datahub_primitive_to_builtin_types):
+def infer_builtin_type(value):
+    for datahub_type, builtin_types in six.iteritems(_builtin_types_dict):
         if isinstance(value, builtin_types):
-            return data_type
+            return datahub_type
 
 
-def _validate_primitive_value(value, data_type):
+def _validate_builtin_value(value, data_type):
     if value is None:
         return None
     if isinstance(value, (bytearray, six.binary_type)):
         value = value.decode('utf-8')
 
-    builtin_types = _datahub_primitive_to_builtin_types[data_type]
-    if isinstance(value, builtin_types):
+    builtin_types = _builtin_types_dict[data_type]
+    if type(value) in builtin_types:
         return value
 
-    inferred_data_type = infer_primitive_data_type(value)
+    inferred_data_type = infer_builtin_type(value)
     if inferred_data_type is None:
-        raise ValueError(
-            'Unknown value type, cannot infer from value: %s, type: %s' % (value, type(value)))
+        raise InvalidParameterException('Unknown value type,'
+                                        ' cannot infer from value: %s, type: %s' % (value, type(value)))
 
     return data_type.cast_value(value, inferred_data_type)
 
 
-def validate_value(value, data_type):
-    if data_type in _datahub_primitive_to_builtin_types:
-        res = _validate_primitive_value(value, data_type)
-    else:
-        raise ValueError('Unknown data type: %s' % data_type)
-
-    data_type.validate_value(res)
-    return res
+def validate_value(value, field_type):
+    datahub_type = _datahub_types_dict[field_type]
+    result = _validate_builtin_value(value, datahub_type)
+    datahub_type.validate_value(result)
+    return result

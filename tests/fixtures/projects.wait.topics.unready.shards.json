@@ -1,0 +1,35 @@
+{
+  "Shards": [
+    {
+      "BeginHashKey": "00000000000000000000000000000000",
+      "BeginKey": "00000000000000000000000000000000",
+      "Cluster": "AT-ODPS-TEST",
+      "CreateTime": 1525344044,
+      "EndHashKey": "55555555555555555555555555555555",
+      "EndKey": "55555555555555555555555555555555",
+      "LeftShardId": "4294967295",
+      "ParentShardIds": [
+        "10",
+        "11"
+      ],
+      "RightShardId": "1",
+      "ShardId": "0",
+      "State": "OPENING",
+      "Worker": "Datahub/XStreamServicexishao4/XStreamBroker@rs3b12026.et2sqa"
+    },
+    {
+      "BeginHashKey": "55555555555555555555555555555555",
+      "BeginKey": "55555555555555555555555555555555",
+      "Cluster": "AT-ODPS-TEST",
+      "CreateTime": 1525344044,
+      "EndHashKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "EndKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+      "LeftShardId": "0",
+      "ParentShardIds": [],
+      "RightShardId": "2",
+      "ShardId": "1",
+      "State": "CLOSING",
+      "Worker": "Datahub/XStreamServicexishao4/XStreamBroker@rs3b12026.et2sqa"
+    }
+  ]
+}

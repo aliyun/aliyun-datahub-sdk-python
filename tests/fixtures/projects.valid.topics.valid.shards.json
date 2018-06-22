@@ -1,0 +1,4 @@
+{
+  "ErrorCode": "NoSuchShard",
+  "ErrorMessage": "Shard meta not exist."
+}

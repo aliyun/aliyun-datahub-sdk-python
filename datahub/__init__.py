@@ -19,12 +19,11 @@
 
 from __future__ import absolute_import
 
-from .version import __version__, __datahub_client_version__
 from .core import DataHub
+from .version import __version__, __datahub_client_version__
 
 """ author
 """
 __author__ = 'andy.xs'
 
-__all__ = ['DataHub', '__author__', 'version_info', '__version__', '__datahub_client_version__']
-
+__all__ = ['DataHub', '__author__', '__version__', '__datahub_client_version__']

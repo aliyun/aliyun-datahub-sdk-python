@@ -1,0 +1,4 @@
+{
+  "ErrorCode": "InvalidShardOperation",
+  "ErrorMessage": "The specified shard is not active."
+}

@@ -19,6 +19,7 @@
 
 from __future__ import absolute_import
 
+
 class AccountType(object):
     """
     Account type.
@@ -27,13 +28,15 @@ class AccountType(object):
     """
     ALIYUN = 'aliyun'
 
+
 class Account(object):
     """
     Base Account Class.
 
     .. seealso:: :class:`datahub.auth.AliyunAccount`
     """
-    def __init__(self, *args, **kwds):
+
+    def __init__(self, *args, **kwargs):
         pass
 
     def get_type(self):
@@ -53,4 +56,3 @@ class Account(object):
         :return: none
         """
         raise NotImplementedError("subclass must provide getType method")
-

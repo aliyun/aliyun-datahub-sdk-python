@@ -19,6 +19,6 @@
 
 """ version
 """
-version_info = (0, 1, 6)
-__version__ = '.'.join(map(str, version_info[:3])) + ''.join(map(str, version_info[3:]))
+
+__version__ = '2.11.0'
 __datahub_client_version__ = '1.1'

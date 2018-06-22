@@ -20,32 +20,39 @@
 from __future__ import absolute_import
 
 import json
-from .rest import HTTPMethod, RestModel
-from .. import errors
+from enum import Enum
 
-class ShardState(object):
+from ..utils import to_str
+
+
+class ShardState(Enum):
     """
-    Shard state
+    Shard state, there are: ``OPENING``, ``ACTIVE``, ``CLOSED``, ``CLOSING``
     """
     OPENING = 'OPENING'
     ACTIVE = 'ACTIVE'
     CLOSED = 'CLOSED'
     CLOSING = 'CLOSING'
 
-class Shard(object):
+
+class ShardBase(object):
     """
-    Shard class
+    Shard base info
+
+    Members:
+        shard_id (:class:`str`): shard id
+
+        begin_hash_key (:class:`str`): begin hash key
+
+        end_hash_key (:class:`str`): end hash key
     """
-    __slots__ = ('_shard_id', '_state', '_closed_time', '_begin_hash_key', '_end_hash_key', '_parent_shard_ids', '_left_shard_id', '_right_shard_id')
-    def __init__(self, *args, **kwds):
-        self._shard_id = kwds['ShardId'] if 'ShardId' in kwds else ''
-        self._state = kwds['State'] if 'State' in kwds else ''
-        self._closed_time = kwds['ClosedTime'] if 'ClosedTime' in kwds else 0
-        self._begin_hash_key = kwds['BeginHashKey'] if 'BeginHashKey' in kwds else ''
-        self._end_hash_key = kwds['EndHashKey'] if 'EndHashKey' in kwds else ''
-        self._parent_shard_ids = kwds['ParentShardIds'] if 'ParentShardIds' in kwds else []
-        self._left_shard_id = kwds['LeftShardId'] if 'LeftShardId' in kwds else ''
-        self._right_shard_id = kwds['RightShardId'] if 'RightShardId' in kwds else ''
+
+    __slots__ = ('_shard_id', '_begin_hash_key', '_end_hash_key')
+
+    def __init__(self, shard_id, begin_hash_key, end_hash_key):
+        self._shard_id = shard_id
+        self._begin_hash_key = begin_hash_key
+        self._end_hash_key = end_hash_key
 
     @property
     def shard_id(self):
@@ -54,22 +61,6 @@ class Shard(object):
     @shard_id.setter
     def shard_id(self, value):
         self._shard_id = value
-
-    @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, value):
-        self._state = value
-
-    @property
-    def closed_time(self):
-        return self._closed_time
-
-    @closed_time.setter
-    def closed_time(self, value):
-        self._closed_time = value
 
     @property
     def begin_hash_key(self):
@@ -86,6 +77,140 @@ class Shard(object):
     @end_hash_key.setter
     def end_hash_key(self, value):
         self._end_hash_key = value
+
+    @classmethod
+    def from_dict(cls, dict_):
+        return cls(dict_['ShardId'], dict_['BeginHashKey'], dict_['EndHashKey'])
+
+    def to_json(self):
+        return {
+            'ShardId': self._shard_id,
+            'BeginHashKey': self._begin_hash_key,
+            'EndHashKey': self._end_hash_key
+        }
+
+    def __repr__(self):
+        return to_str(self.to_json())
+
+
+class ShardContext(object):
+    """
+    Shard context
+
+    Members:
+        shard_id (:class:`str`): shard id
+
+        start_sequence (:class:`str`): start sequence
+
+        end_sequence (:class:`str`): end sequence
+
+        current_sequence (:class:`str`): current sequence
+    """
+    __slots__ = ('_shard_id', '_start_sequence', '_end_sequence', '_current_sequence')
+
+    def __init__(self, shard_id, start_sequence, end_sequence, current_sequence):
+        self._shard_id = shard_id
+        self._start_sequence = start_sequence
+        self._end_sequence = end_sequence
+        self._current_sequence = current_sequence
+
+    @property
+    def shard_id(self):
+        return self._shard_id
+
+    @shard_id.setter
+    def shard_id(self, value):
+        self._shard_id = value
+
+    @property
+    def start_sequence(self):
+        return self._start_sequence
+
+    @start_sequence.setter
+    def start_sequence(self, value):
+        self._start_sequence = value
+
+    @property
+    def end_sequence(self):
+        return self._end_sequence
+
+    @end_sequence.setter
+    def end_sequence(self, value):
+        self._end_sequence = value
+
+    @property
+    def current_sequence(self):
+        return self._current_sequence
+
+    @current_sequence.setter
+    def current_sequence(self, value):
+        self._current_sequence = value
+
+    def to_json(self):
+        return {
+            'ShardId': self._shard_id,
+            'StartSequence': self._start_sequence,
+            'EndSequence': self._end_sequence,
+            'CurrentSequence': self.current_sequence
+        }
+
+    @classmethod
+    def from_dict(cls, dict_):
+        return cls(dict_['ShardId'], dict_['StartSequence'], dict_['EndSequence'], dict_['CurrentSequence'])
+
+    def __repr__(self):
+        return to_str(self.to_json())
+
+
+class Shard(ShardBase):
+    """
+    Shard info
+
+    Members:
+        shard_id (:class:`str`): shard id
+
+        begin_hash_key (:class:`str`): begin hash key
+
+        end_hash_key (:class:`str`): end hash key
+
+        state (:class:`datahub.models.ShardState`): shard state
+
+        closed_time (:class:`str`): closed time
+
+        parent_shard_ids (list): parent shard ids
+
+        left_shard_id (:class:`str`): left shard id
+
+        right_shard_id (:class:`str`): right shard id
+    """
+    __slots__ = (
+        '_shard_id', '_state', '_closed_time', '_begin_hash_key', '_end_hash_key', '_parent_shard_ids',
+        '_left_shard_id', '_right_shard_id')
+
+    def __init__(self, shard_id, begin_hash_key, end_hash_key, state, closed_time, parent_shard_ids, left_shard_id,
+                 right_shard_id):
+        super(Shard, self).__init__(shard_id, begin_hash_key, end_hash_key)
+        self._state = state
+        self._closed_time = closed_time
+        self._parent_shard_ids = parent_shard_ids
+        self._left_shard_id = left_shard_id
+        self._right_shard_id = right_shard_id
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        self._state = value
+
+    @property
+    def closed_time(self):
+        return self._closed_time
+
+    @closed_time.setter
+    def closed_time(self, value):
+        self._closed_time = value
 
     @property
     def parent_shard_ids(self):
@@ -114,7 +239,7 @@ class Shard(object):
     def to_json(self):
         return {
             "ShardId": self._shard_id,
-            "State": self._state,
+            "State": self._state.value,
             "ClosedTime": self._closed_time,
             "BeginHashKey": self._begin_hash_key,
             "EndHashKey": self._end_hash_key,
@@ -123,166 +248,15 @@ class Shard(object):
             "RightShardId": self._right_shard_id
         }
 
-    def __str__(self):
-        return json.dumps(self.to_json())
+    @classmethod
+    def from_dict(cls, dict_):
+        state = ShardState(dict_['State'] if 'State' in dict_ else '')
+        closed_time = dict_['CloseTime'] if 'CloseTime' in dict_ else ''
+        parent_shard_ids = dict_['ParentShardIds'] if 'ParentShardIds' in dict_ else []
+        left_shard_id = dict_['LeftShardId'] if 'LeftShardId' in dict_ else ''
+        right_shard_id = dict_['RightShardId'] if 'RightShardId' in dict_ else ''
+        return cls(dict_['ShardId'], dict_['BeginHashKey'], dict_['EndHashKey'],
+                   state, closed_time, parent_shard_ids, left_shard_id, right_shard_id)
 
-    def __hash__(self):
-        return hash((type(self), self._shard_id))
-
-    def __eq__(self, other):
-        if other is None:
-            return False
-
-        if not isinstance(other, type(self)):
-            return False
-
-        return self._shard_id == other._shard_id
-
-class ShardAction(object):
-    """
-    Shard action
-    """
-    LIST = 'list'
-    MERGE = 'merge'
-    SPLIT = 'split'
-
-class Shards(RestModel):
-    """
-    Shards class, will be used by list shard interface
-    """
-    def __init__(self, action, *args, **kwds):
-        self.__action = action
-        super(Shards, self).__init__(*args, **kwds)
-        self._project_name = kwds['project_name'] if 'project_name' in kwds else ''
-        self._topic_name = kwds['topic_name'] if 'topic_name' in kwds else ''
-        self._shard_list = []
-
-    @property
-    def project_name(self):
-        return self._project_name
-
-    @project_name.setter
-    def project_name(self, value):
-        self._project_name = value
-
-    @property
-    def topic_name(self):
-        return self._topic_name
-
-    @topic_name.setter
-    def topic_name(self, value):
-        self._topic_name = value
-
-    @property
-    def shard_list(self):
-        return self._shard_list
-
-    def set_splitinfo(self, split_shard_id, split_key):
-        self.__split_shard_id = split_shard_id
-        self.__split_key = split_key
-
-    def set_mergeinfo(self, shard_id, adj_shard_id):
-        self.__shard_id = shard_id
-        self.__adj_shard_id = adj_shard_id
-
-    def __len__(self):
-        return len(self._shard_list)
-
-    def append(self, shard):
-        self._shard_list.append(shard)
-
-    def extend(self, shards):
-        self._shard_list.extend(shards)
-
-    def __setitem__(self, index, shard):
-        if index < 0  or index > len(self._shard_list) - 1:
-            raise ValueError('index out range')
-        self._shard_list[index] = shard
-
-    def __getitem__(self, index):
-        if index < 0  or index > len(self._shard_list) - 1:
-            raise ValueError('index out range')
-        return self._shard_list[index]
-
-    def __str__(self):
-        shardsjson = {}
-        shardsjson['Shards'] = []
-        for shard in self._shard_list:
-            shardsjson['Shards'].append(shard.to_json())
-        return json.dumps(shardsjson)
-
-    def __iter__(self):
-        for shard in self._shard_list:
-            yield shard
-
-    def throw_exception(self, response_result):
-        if 'NoSuchProject' == response_result.error_code or 'NoSuchTopic' == response_result.error_code or 'NoSuchShard' == response_result.error_code:
-            raise errors.NoSuchObjectException(response_result.status_code, response_result.request_id, response_result.error_code, response_result.error_msg)
-        elif 'InvalidShardOperation' == response_result.error_code:
-            raise errors.InvalidShardOperationException(response_result.status_code, response_result.request_id, response_result.error_code, response_result.error_msg)
-        elif 'LimitExceeded' == response_result.error_code:
-            raise errors.LimitExceededException(response_result.status_code, response_result.request_id, response_result.error_code, response_result.error_msg)
-        elif 'InvalidParameter' == response_result.error_code:
-            raise errors.InvalidParameterException(response_result.status_code, response_result.request_id, response_result.error_code, response_result.error_msg)
-        elif response_result.status_code >= 500:
-            raise errors.ServerInternalError(response_result.status_code, response_result.request_id, response_result.error_code, response_result.error_msg)
-        else:
-            raise errors.DatahubException(response_result.status_code, response_result.request_id, response_result.error_code, response_result.error_msg)
-
-    def resource(self):
-        if not self._project_name or not self._topic_name:
-            raise ValueError('project and topic name must not be empty')
-        return "/projects/%s/topics/%s/shards" %(self._project_name, self._topic_name)
-
-    def encode(self, method):
-        ret = {}
-        if HTTPMethod.POST == method:
-            if ShardAction.MERGE == self.__action:
-                if not self.__shard_id or not self.__adj_shard_id:
-                    raise ValueError('merge shard action must provide shard id and adjacent shard id')
-                data = {}
-                data['Action'] = 'merge'
-                data['ShardId'] = self.__shard_id
-                data['AdjacentShardId'] = self.__adj_shard_id
-                ret['data'] = json.dumps(data)
-            elif ShardAction.SPLIT == self.__action:
-                if not self.__split_shard_id or not self.__split_key:
-                    raise ValueError('split shard action must provide shard id and split key')
-                data = {}
-                data['Action'] = 'split'
-                data['ShardId'] = self.__split_shard_id
-                data['SplitKey'] = self.__split_key
-                ret['data'] = json.dumps(data)
-
-        return ret
-
-    def decode(self, method, resp):
-        if HTTPMethod.GET == method:
-            content = json.loads(resp.content)
-            for item in content['Shards']:
-                shard = Shard()
-                shard.shard_id = item['ShardId']
-                shard.state = item['State']
-                if ShardState.CLOSED == shard.state:
-                    shard.closed_time = item['ClosedTime']
-                shard.begin_hash_key = item['BeginHashKey']
-                shard.end_hash_key = item['EndHashKey']
-                shard.parent_shard_ids = item['ParentShardIds'] if 'ParentShardIds' in item else []
-                shard.left_shard_id = item['LeftShardId'] if 'LeftShardId' in item else ''
-                shard.right_shard_id = item['RightShardId'] if 'RightShardId' in item else ''
-                self.append(shard)
-        elif HTTPMethod.POST == method:
-            content = json.loads(resp.content)
-            if ShardAction.MERGE == self.__action:
-                shard = Shard()
-                shard.shard_id = content['ShardId']
-                shard.begin_hash_key = content['BeginHashKey']
-                shard.end_hash_key = content['EndHashKey']
-                self.append(shard)
-            elif ShardAction.SPLIT == self.__action:
-                for item in content['NewShards']:
-                    shard = Shard()
-                    shard.shard_id = item['ShardId']
-                    shard.begin_hash_key = item['BeginHashKey']
-                    shard.end_hash_key = item['EndHashKey']
-                    self.append(shard)
+    def __repr__(self):
+        return to_str(self.to_json())
