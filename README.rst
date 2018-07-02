@@ -121,14 +121,14 @@ Usage
 
     from datahub.models import TupleRecord
     records0 = []
-    record0 = TupleRecord(schema=topic.record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
+    record0 = TupleRecord(schema=record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
     record0.shard_id = '0'
     record0.put_attribute('AK', '47')
     records0.append(record0)
     put_result = dh.put_records('pydatahub_test', 'tuple_topic_test', records0)
     print(put_result)
 
-    # ============================= put tuple records =============================
+    # ============================= put blob records =============================
 
     from datahub.models import BlobRecord
     data = None

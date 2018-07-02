@@ -1,6 +1,16 @@
 Changelog
 ================
 
+Version 2.11.1
+-----------------
+
++ fix signature bug
++ fix null value parse error in pb mode
++ fix ClosedTime parse error in ListShardResult
++ fix failed_record_count in FailedRecordCount
++ add example
++ correct doc
+
 Version 2.11.0
 -----------------
 

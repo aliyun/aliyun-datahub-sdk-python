@@ -194,7 +194,7 @@ class RecordSchema(object):
         buf = six.StringIO()
 
         name_space = 2 * max(len(field.name) for field in self._field_list)
-        type_space = 2 * max(len(repr(field.type)) for field in self._field_list)
+        type_space = 2 * max(len(field.type.value) for field in self._field_list)
         allow_null_space = 8
 
         buf.write('RecordSchema {\n')
@@ -203,7 +203,7 @@ class RecordSchema(object):
             field_strs.append('{0}{1}{2}'.format(
                 field.name.ljust(name_space),
                 field.type.value.ljust(type_space),
-                to_str(field.notnull).ljust(allow_null_space)
+                to_str(field.allow_null).ljust(allow_null_space)
             ))
         buf.write(utils.indent('\n'.join(field_strs), 2))
         buf.write('\n')

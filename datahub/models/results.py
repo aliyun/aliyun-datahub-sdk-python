@@ -515,7 +515,7 @@ class PutRecordsResult(Result):
 
     def to_json(self):
         return {
-            'FailedRecordCount': self.failed_record_count,
+            'FailedRecordCount': self._failed_record_count,
             'FailedRecords': [failed_record.to_json() for failed_record in self._failed_records]
         }
 
@@ -656,30 +656,6 @@ class GetPBRecordsResult(GetRecordsResult):
             sequence += 1
             records.append(record)
         return cls(next_cursor, record_count, start_sequence, records)
-
-        # st = time.time()
-        # pb_get_record_response = GetRecordsResponse()
-        # pb_get_record_response.ParseFromString(content[12:])
-        # Result.parse += time.time() - st
-        # next_cursor = pb_get_record_response.next_cursor
-        # record_count = pb_get_record_response.record_count
-        # start_sequence = pb_get_record_response.start_sequence
-        # records = []
-        # sequence = start_sequence
-        # for pb_record in pb_get_record_response.records:
-        #     record_schema = kwargs['record_schema']
-        #     if record_schema:
-        #         values = [bp_field_data.value for bp_field_data in pb_record.data.data]
-        #         record = TupleRecord(schema=record_schema, values=values)
-        #     else:
-        #         record = BlobRecord(blob_data=pb_record.data.data[0].value)
-        #     record._attributes = pb_record.attributes
-        #     record.system_time = pb_record.system_time
-        #     record.sequence = sequence
-        #     sequence += 1
-        #     records.append(record)
-        # Result.decode += time.time() - st
-        # return cls(next_cursor, record_count, start_sequence, records)
 
 
 class GetMeteringInfoResult(Result):

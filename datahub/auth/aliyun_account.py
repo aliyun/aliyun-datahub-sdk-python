@@ -80,6 +80,12 @@ class AliyunAccount(Account):
         return AccountType.ALIYUN
 
     @staticmethod
+    def _build_canonical_query(query):
+        param_pairs = sorted(parse_qsl(query, True), key=lambda it: it[0])
+        param_parts = map(lambda p: p[0] + '=' + p[1] if p[1] else p[0], param_pairs)
+        return '&'.join(param_parts)
+
+    @staticmethod
     def _build_canonical_str(url_components, req):
         # Build signing string
         lines = [req.method, req.headers[Headers.CONTENT_TYPE], req.headers[Headers.DATE], ]
@@ -94,13 +100,7 @@ class AliyunAccount(Account):
                 headers_to_sign[k] = v
 
         # url params
-        if url_components.query:
-            params_list = sorted(parse_qsl(url_components.query, True),
-                                 key=lambda it: it[0])
-            params = dict(params_list)
-            for k, v in params.items():
-                if k.startswith('x-datahub-'):
-                    headers_to_sign[k] = v
+        canonical_query = AliyunAccount._build_canonical_query(url_components.query)
 
         headers_to_sign = OrderedDict([(k, headers_to_sign[k])
                                        for k in sorted(headers_to_sign)])
@@ -109,7 +109,7 @@ class AliyunAccount(Account):
         for k, v in six.iteritems(headers_to_sign):
             lines.append('%s:%s' % (k, v))
 
-        lines.append(url_components.path)
+        lines.append(url_components.path + '?' + canonical_query if canonical_query else url_components.path)
         return '\n'.join(lines)
 
     def sign_request(self, request):

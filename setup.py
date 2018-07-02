@@ -59,7 +59,7 @@ setuptools.setup(
     author='andy.xs',
     author_email='helloworld.xs@foxmail.com',
     url='https://github.com/aliyun/aliyun-datahub-sdk-python',
-    packages=setuptools.find_packages(exclude='tests'),
+    packages=setuptools.find_packages(exclude=('tests', 'examples')),
     install_requires=requirements,
     license='Apache License 2.0'
 )
