@@ -88,7 +88,7 @@ class Bigint(DataType):
         return super(Bigint, self).can_implicit_cast(other)
 
     def validate_value(self, val):
-        if val is None and self.nullable:
+        if val is None:
             return True
         smallest, largest = self._bounds
         if smallest <= val <= largest:
@@ -133,7 +133,7 @@ class String(DataType):
         return super(String, self).can_implicit_cast(other)
 
     def validate_value(self, val):
-        if val is None and self.nullable:
+        if val is None:
             return True
         if len(val) <= self._max_length:
             return True
@@ -153,7 +153,7 @@ class Timestamp(DataType):
         return super(Timestamp, self).can_implicit_cast(other)
 
     def validate_value(self, val):
-        if val is None and self.nullable:
+        if val is None:
             return True
 
         smallest, largest = self._ticks_bound
@@ -248,8 +248,10 @@ def _validate_builtin_value(value, data_type):
     return data_type.cast_value(value, inferred_data_type)
 
 
-def validate_value(value, field_type):
-    datahub_type = _datahub_types_dict[field_type]
+def validate_value(value, field):
+    if field.allow_null and field.type != FieldType.STRING and value == '':
+        return None
+    datahub_type = _datahub_types_dict[field.type]
     result = _validate_builtin_value(value, datahub_type)
     datahub_type.validate_value(result)
     return result

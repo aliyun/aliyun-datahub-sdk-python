@@ -239,7 +239,6 @@ class TupleRecord(Record):
     >>> 'test3'
     >>> record.get_value('name')
     >>> 'test3'
-    >>> record['name', 'id']
     >>> len(record.values)
     2
     >>> record.has_field('name')
@@ -337,10 +336,9 @@ class TupleRecord(Record):
 
     def _set_value_by_index(self, index, value):
         field = self._field_list[index]
-        field_type = field.type
         if not field.allow_null and value is None:
             raise InvalidParameterException('Filed with index %d can not be none' % index)
-        val = _types.validate_value(value, field_type)
+        val = _types.validate_value(value, field)
         self._values[index] = val
 
     def _set_value_by_name(self, name, value):

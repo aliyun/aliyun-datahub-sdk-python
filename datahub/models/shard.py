@@ -251,7 +251,7 @@ class Shard(ShardBase):
     @classmethod
     def from_dict(cls, dict_):
         state = ShardState(dict_['State'] if 'State' in dict_ else '')
-        closed_time = dict_['CloseTime'] if 'CloseTime' in dict_ else ''
+        closed_time = dict_['ClosedTime'] if 'ClosedTime' in dict_ else ''
         parent_shard_ids = dict_['ParentShardIds'] if 'ParentShardIds' in dict_ else []
         left_shard_id = dict_['LeftShardId'] if 'LeftShardId' in dict_ else ''
         right_shard_id = dict_['RightShardId'] if 'RightShardId' in dict_ else ''

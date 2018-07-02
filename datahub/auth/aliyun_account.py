@@ -26,7 +26,7 @@ from six.moves.urllib.parse import urlparse, unquote
 
 from .core import Account, AccountType
 from ..rest import Headers
-from ..utils import hmac_sha1
+from ..utils import hmac_sha1, to_str
 
 try:
     from urllib.parse import parse_qsl
@@ -124,7 +124,7 @@ class AliyunAccount(Account):
         canonical_str = self._build_canonical_str(url_components, request)
         logger.debug('canonical string: ' + canonical_str)
 
-        sign = hmac_sha1(self._access_key, canonical_str)
+        sign = to_str(hmac_sha1(self._access_key, canonical_str))
 
         auth_str = 'DATAHUB %s:%s' % (self._access_id, sign)
         request.headers[Headers.AUTHORIZATION] = auth_str
