@@ -112,7 +112,7 @@ print(topic_result.record_schema)
 
 # ============================= list shard =============================
 
-shards_result = dh.list_shards(project_name, topic_name)
+shards_result = dh.list_shard(project_name, topic_name)
 print(shards_result)
 
 # ============================= put tuple records =============================
