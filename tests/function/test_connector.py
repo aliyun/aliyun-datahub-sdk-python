@@ -384,8 +384,8 @@ class TestConnector:
         print(result)
         assert result.start_sequence >= 0
         assert result.end_sequence > 0
-        assert result.current_sequence == 0
-        assert result.record_time == 0
+        assert result.current_sequence >= 0
+        assert result.record_time >= 0
         assert result.update_time > 0
         assert result.state == ConnectorShardStatus.CONTEXT_PLANNED
 
@@ -460,7 +460,7 @@ class TestConnector:
         result = dh.get_connector_done_time(connector_test_project_name,
                                             system_time_topic_name, ConnectorType.SINK_ODPS)
         print(result)
-        assert result.done_time == 0
+        assert result.done_time >= 0
 
         dh.delete_connector(connector_test_project_name, system_time_topic_name, ConnectorType.SINK_ODPS)
 

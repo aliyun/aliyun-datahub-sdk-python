@@ -93,6 +93,8 @@ class TestRecord:
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP, FieldType.DECIMAL],
             [False, True, True, True, True, True])
 
+        print(TupleRecord(schema=record_schema))
+
         try:
             dh.create_project(project_name, '')
         except ResourceExistException:

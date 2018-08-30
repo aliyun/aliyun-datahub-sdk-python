@@ -23,7 +23,6 @@ import abc
 import json
 
 import six
-import time
 
 from cprotobuf.internal import encode_data
 

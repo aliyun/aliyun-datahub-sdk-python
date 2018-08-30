@@ -94,6 +94,9 @@ class TestSchema:
         record_schema_1.add_field(Field('bool_field', FieldType.BOOLEAN))
         record_schema_1.add_field(Field('event_time1', FieldType.TIMESTAMP))
 
+        print(record_schema_0)
+        print(RecordSchema())
+
         try:
             dh.create_project(project_name_0, '')
         except ResourceExistException:

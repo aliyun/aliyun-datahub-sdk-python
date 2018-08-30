@@ -249,8 +249,10 @@ class TupleRecord(Record):
 
     def __init__(self, field_list=None, schema=None, values=None):
         super(TupleRecord, self).__init__()
-        self._field_list = field_list or schema.field_list
-        if self._field_list is None:
+        self._field_list = field_list
+        if schema is not None:
+            self._field_list = schema.field_list
+        if self._field_list is None or len(self._field_list) == 0:
             raise InvalidParameterException(ErrorMessage.MISSING_TUPLE_RECORD_SCHEMA)
 
         self._values = [None, ] * len(self._field_list)
@@ -357,9 +359,9 @@ class TupleRecord(Record):
     def __repr__(self):
         buf = six.StringIO()
 
-        name_space = 2 * max(len(field.name) for field in self._field_list)
-        type_space = 2 * max(len(field.type.value) for field in self._field_list)
-        value_space = 2 * max(len(to_str(value)) for value in self._values if value)
+        name_space = 2 * max(len(field.name) for field in self._field_list) if self._field_list else 0
+        type_space = 2 * max(len(field.type.value) for field in self._field_list) if self._field_list else 0
+        value_space = 2 * max(len(to_str(value if value is not None else "None")) for value in self._values) if self._values else 0
 
         buf.write('TupleRecord {\n')
         buf.write('  Values {\n')
@@ -380,8 +382,8 @@ class TupleRecord(Record):
         buf.write('  }\n')
 
         if self._attributes:
-            attribute_key_space = 2 * max(len(to_str(key)) for key in self._attributes)
-            attribute_value_space = 2 * max(len(to_str(self._attributes[key])) for key in self._attributes)
+            attribute_key_space = 2 * max(len(to_str(key)) for key in self._attributes) if self._attributes else 0
+            attribute_value_space = 2 * max(len(to_str(self._attributes[key])) for key in self._attributes) if self._attributes else 0
 
             buf.write('    Attributes {\n')
             field_strs = ['    {0}{1}'.format(

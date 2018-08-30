@@ -193,8 +193,8 @@ class RecordSchema(object):
     def __repr__(self):
         buf = six.StringIO()
 
-        name_space = 2 * max(len(field.name) for field in self._field_list)
-        type_space = 2 * max(len(field.type.value) for field in self._field_list)
+        name_space = 2 * max(len(field.name) for field in self._field_list) if self._field_list else 0
+        type_space = 2 * max(len(field.type.value) for field in self._field_list) if self._field_list else 0
         allow_null_space = 8
 
         buf.write('RecordSchema {\n')

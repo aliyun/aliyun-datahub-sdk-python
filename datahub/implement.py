@@ -17,8 +17,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import time
+
 from .auth import AliyunAccount
-from .exceptions import InvalidParameterException, DatahubException
+from .exceptions import InvalidParameterException
 from .models import ShardState, OffsetBase, SubscriptionState, FieldType, ConnectorConfig
 from .models.params import *
 from .models.results import *
