@@ -19,7 +19,6 @@
 
 from __future__ import absolute_import
 
-import json
 from enum import Enum
 
 from ..utils import to_str

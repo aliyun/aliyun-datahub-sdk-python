@@ -43,7 +43,7 @@ Tested on Python 2.7, 3.3, 3.4, 3.5, 3.6 and pypy, Python 3.6 recommended
 Dependencies
 ---------------
 
--  setuptools (>=3.0)
+-  setuptools (>=39.2.0)
 -  requests (>=2.4.0)
 -  simplejson (>=3.3.0)
 -  six (>=1.1.0)

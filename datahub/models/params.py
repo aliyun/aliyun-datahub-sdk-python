@@ -773,7 +773,7 @@ class UpdateSubscriptionStateParams(RequestParams):
     Request params of update subscription state
     """
 
-    __slots__ = '_comment'
+    __slots__ = '_state'
 
     def __init__(self, state):
         self._state = state

@@ -1,6 +1,11 @@
 Changelog
 ================
 
+Version 2.11.2
+-----------------
+
++ add security token
+
 Version 2.11.1
 -----------------
 

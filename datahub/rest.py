@@ -75,6 +75,7 @@ class Headers(object):
     RAW_SIZE = "x-datahub-content-raw-size"
     REQUEST_ACTION = "x-datahub-request-action"
     REQUEST_ID = "x-datahub-request-id"
+    SECURITY_TOKEN = "x-datahub-security-token"
     TRANSFER_ENCODING = "Transfer-Encoding"
     USER_AGENT = "User-Agent"
 
@@ -231,6 +232,8 @@ class RestClient(object):
             Headers.CONTENT_TYPE: ContentType.HTTP_JSON.value,
             Headers.DATE: gen_rfc822_date()
         }
+        if self._account.security_token:
+            headers[Headers.SECURITY_TOKEN] = self._account.security_token
         return headers
 
     @staticmethod

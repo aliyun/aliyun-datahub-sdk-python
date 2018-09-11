@@ -47,12 +47,13 @@ class AliyunAccount(Account):
     Aliyun account implement base from :class:`datahub.auth.Account`
     """
 
-    __slots__ = '_access_id', '_access_key'
+    __slots__ = '_access_id', '_access_key', '_security_token'
 
     def __init__(self, *args, **kwargs):
         super(AliyunAccount, self).__init__(*args, **kwargs)
-        self._access_id = kwargs.get('access_id', '')
-        self._access_key = kwargs.get('access_key', '')
+        self._access_id = kwargs.get('access_id', '').strip()
+        self._access_key = kwargs.get('access_key', '').strip()
+        self._security_token = kwargs.get('security_token', '').strip()
 
     @property
     def access_id(self):
@@ -69,6 +70,14 @@ class AliyunAccount(Account):
     @access_key.setter
     def access_key(self, value):
         self._access_key = value
+
+    @property
+    def security_token(self):
+        return self._security_token
+
+    @security_token.setter
+    def security_token(self, value):
+        self._security_token = value
 
     def get_type(self):
         """
