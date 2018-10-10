@@ -40,7 +40,8 @@ class DataHubJson(object):
     def __init__(self, access_id, access_key, endpoint=None, compress_format=None, **kwargs):
         self._account = kwargs.pop('account', None)
         if self._account is None:
-            self._account = AliyunAccount(access_id=access_id, access_key=access_key)
+            security_token = kwargs.pop('security_token', '')
+            self._account = AliyunAccount(access_id=access_id, access_key=access_key, security_token=security_token)
         self._endpoint = endpoint
         self._compress_format = compress_format
         self._rest_client = RestClient(self._account, self._endpoint, **kwargs)

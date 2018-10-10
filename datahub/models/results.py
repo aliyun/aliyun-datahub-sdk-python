@@ -462,7 +462,7 @@ class GetCursorResult(Result):
     @classmethod
     def parse_content(cls, content, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['Cursor'], content['Sequence'], content['RecordTime'])
+        return cls(content['Cursor'], content['RecordTime'], content['Sequence'])
 
     def to_json(self):
         return {

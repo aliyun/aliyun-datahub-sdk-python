@@ -1,6 +1,11 @@
 Changelog
 ================
 
+Version 2.11.3
+-----------------
+
++ fix record repr bug
+
 Version 2.11.2
 -----------------
 

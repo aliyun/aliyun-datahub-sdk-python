@@ -291,6 +291,7 @@ class RestClient(object):
         resp = self._session.send(prepared_req,
                                   stream=self._stream,
                                   timeout=(self._conn_timeout, self._read_timeout),
+                                  proxies=self._proxies,
                                   verify=False)
 
         logger.debug('response.status_code: %d' % resp.status_code)

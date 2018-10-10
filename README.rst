@@ -3,7 +3,7 @@ Datahub Python SDK
 
 |PyPI version| |Docs| |License| |Implementation|
 
-Elegent way to access Datahub Python SDK API.
+Elegant way to access Datahub Python SDK API.
 `Documentation <http://pydatahub.readthedocs.io/zh_CN/latest/>`__
 
 Installation
@@ -26,6 +26,11 @@ Or from source code:
     $ git clone <git clone URL> pydatahub
     $ cd pydatahub
     $ python setup.py install
+
+If python-dev was not installed, error message like 'Python.h: No such file or directory' will be printed. `See this <https://stackoverflow.com/questions/21530577/fatal-error-python-h-no-such-file-or-directory>`__
+
+If install in windows, error message like 'Microsoft Visual C++ XX.0 is required', download and install dependency `here <https://wiki.python.org/moin/WindowsCompilers>`__
+
 
 If network is not available, requirements are in dependency folder:
 
@@ -75,6 +80,9 @@ Usage
 
     from datahub import DataHub
     dh = DataHub('**your-access-id**', '**your-secret-access-key**', endpoint='**your-end-point**')
+
+    # with security token
+    # dh = DataHub('**your-access-id**', '**your-secret-access-key**', endpoint='**your-end-point**', security_token='**your-security-token**')
 
     # ============================= create project =============================
 

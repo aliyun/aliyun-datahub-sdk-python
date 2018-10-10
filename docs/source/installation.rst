@@ -47,3 +47,19 @@
     python -c "from datahub import DataHub"
 
 如果上述命令执行成功，恭喜你安装Datahub Python版本SDK成功！
+
+常见问题
+==========
+
+如果安装过程中出现错误信息'Python.h: No such file or directory'，常用的操作系统安装方式如下:
+
+.. code-block:: sh
+
+    $ sudo apt-get install python-dev   # for python2.x installs
+    $ sudo apt-get install python3-dev  # for python3.x installs
+
+    $ sudo yum install python-devel   # for python2.x installs
+    $ sudo yum install python34-devel   # for python3.4 installs
+
+如果使用windows操作系统，根据提示信息可到 `此处 <https://wiki.python.org/moin/WindowsCompilers>`__ 下载对应版本的 Visual C++ SDK
+

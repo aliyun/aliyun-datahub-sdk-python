@@ -7,7 +7,7 @@
 </div>
 -----------------
 
-Elegent way to access Datahub Python SDK API. [Documentation](http://pydatahub.readthedocs.io/zh_CN/latest/)
+Elegant way to access Datahub Python SDK API. [Documentation](http://pydatahub.readthedocs.io/zh_CN/latest/)
 
 ## Installation
 
@@ -29,6 +29,10 @@ $ cd pydatahub
 $ python setup.py install
 ```
 
+If python-dev was not installed, error message like 'Python.h: No such file or directory' will be printed. [See this](https://stackoverflow.com/questions/21530577/fatal-error-python-h-no-such-file-or-directory)
+
+If install in windows, error message like 'Microsoft Visual C++ XX.0 is required', download and install dependency [here](https://wiki.python.org/moin/WindowsCompilers)
+
 If network is not available, requirements are in dependency folder:
 
 ```shell
@@ -44,7 +48,7 @@ Tested on Python 2.7, 3.3, 3.4, 3.5, 3.6 and pypy, Python 3.6 recommended
 
 ## Dependencies
 
- * setuptools (>=3.0)
+ * setuptools (>=39.2.0)
  * requests (>=2.4.0)
  * simplejson (>=3.3.0)
  * six (>=1.1.0)
@@ -73,6 +77,9 @@ $ tox
 ```python
 from datahub import DataHub
 dh = DataHub('**your-access-id**', '**your-secret-access-key**', endpoint='**your-end-point**')
+
+# with security token
+# dh = DataHub('**your-access-id**', '**your-secret-access-key**', endpoint='**your-end-point**', security_token='**your-security-token**')
 
 # ============================= create project =============================
 

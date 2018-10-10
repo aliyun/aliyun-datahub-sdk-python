@@ -375,7 +375,7 @@ class TupleRecord(Record):
             field_strs.append('    {0}{1}{2}'.format(
                 field.name.ljust(name_space),
                 field.type.value.ljust(type_space),
-                str(self._values[index]).ljust(value_space)
+                to_str(self._values[index] if self._values[index] is not None else "None").ljust(value_space)
             ))
         buf.write(indent('\n'.join(field_strs), 2))
         buf.write('\n')
@@ -392,8 +392,8 @@ class TupleRecord(Record):
             )]
             for key in self._attributes:
                 field_strs.append('    {0}{1}'.format(
-                    str(key).ljust(attribute_key_space),
-                    str(self._attributes[key]).ljust(attribute_value_space)
+                    to_str(key).ljust(attribute_key_space),
+                    to_str(self._attributes[key]).ljust(attribute_value_space)
                 ))
             buf.write(indent('\n'.join(field_strs), 2))
             buf.write('\n')
