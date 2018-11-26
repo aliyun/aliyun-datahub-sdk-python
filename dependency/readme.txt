@@ -10,5 +10,4 @@
 # end
 
 # install dependency
-0. pip install -r first.txt
-1. pip install -r second.txt
+0. sudo ./install_dependency.sh

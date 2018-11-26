@@ -674,7 +674,7 @@ class OssConnectorConfig(ConnectorConfig):
     """
 
     __slots__ = (
-    '_endpoint', '_bucket', '_prefix', '_time_format', '_time_range', '_auth_mode', '_access_id', '_access_key')
+        '_endpoint', '_bucket', '_prefix', '_time_format', '_time_range', '_auth_mode', '_access_id', '_access_key')
 
     def __init__(self, endpoint, bucket, prefix, time_format, time_range, auth_mode, access_id, access_key):
         self._endpoint = endpoint
