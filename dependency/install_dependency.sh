@@ -9,7 +9,7 @@ pip install pkgconfig-1.3.1.tar.gz
 pip install setuptools_scm-2.1.0.tar.gz
 pip install future-0.16.0.tar.gz
 pip install enum34-1.1.6.tar.gz; python_version < '3.4'
-pip install cprotobuf-0.1.9.tar.gzpip install
+pip install cprotobuf-0.1.9.tar.gzpip
 pip install requests-2.18.4-py2.py3-none-any.whl
 pip install pytest-runner-4.2.tar.gz
 pip install lz4-2.0.0.tar.gz
