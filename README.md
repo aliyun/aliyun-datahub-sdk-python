@@ -155,14 +155,16 @@ print(cursor_result)
 
 # ============================= get blob records =============================
 
-get_result = dh.get_blob_records(project_name, topic_name, '0', cursor, 10)
+blob_cursor_result = dh.get_cursor(project_name, topic_name, '0', CursorType.OLDEST)
+get_result = dh.get_blob_records(project_name, topic_name, '0', blob_cursor_result.cursor, 10)
 print(get_result)
 print(get_result.records)
 print(get_result.records[0])
 
 # ============================= get tuple records =============================
 
-get_result = dh.get_tuple_records(project_name, topic_name, '0', record_schema, cursor, 10)
+tuple_cursor_result = dh.get_cursor(project_name, topic_name, '0', CursorType.OLDEST)
+get_result = dh.get_tuple_records(project_name, topic_name, '0', record_schema, tuple_cursor_result.cursor, 10)
 print(get_result)
 print(get_result.records)
 print(get_result.records[0].values)

@@ -348,8 +348,6 @@ class TestConnector:
         for shard_context in result.shard_contexts:
             assert shard_context.shard_id != ''
             assert shard_context.current_sequence >= 0
-            assert shard_context.start_sequence >= 0
-            assert shard_context.end_sequence > 0
 
         dh.delete_connector(connector_test_project_name, system_time_topic_name, ConnectorType.SINK_ODPS)
 

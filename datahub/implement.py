@@ -643,6 +643,8 @@ class DataHubJson(object):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'shard_id')
         if check_empty(cursor):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'cursor')
+        if not check_type(cursor, str):
+            raise InvalidParameterException(ErrorMessage.INVALID_TYPE % ('cursor', 'str'))
 
         url = Path.SHARD % (project_name, topic_name, shard_id)
 

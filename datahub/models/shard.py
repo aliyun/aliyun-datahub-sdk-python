@@ -156,7 +156,8 @@ class ShardContext(object):
 
     @classmethod
     def from_dict(cls, dict_):
-        return cls(dict_['ShardId'], dict_['StartSequence'], dict_['EndSequence'], dict_['CurrentSequence'])
+        return cls(dict_.get('ShardId', ''), dict_.get('StartSequence', -1),
+                   dict_.get('EndSequence', -1), dict_.get('CurrentSequence', -1))
 
     def __repr__(self):
         return to_str(self.to_json())

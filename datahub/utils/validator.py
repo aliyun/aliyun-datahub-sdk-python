@@ -59,6 +59,7 @@ def check_type(variable, *args):
     for data_type in args:
         if isinstance(variable, data_type):
             return True
+    return False
 
 
 def check_negative(variable):
