@@ -105,15 +105,15 @@ class TestOffset:
             # ======================= init and get subscription offset =======================
             result = dh.init_and_get_subscription_offset(project_name, topic_name, sub_id, '0')
             print(result)
-            assert result.offsets['0'].sequence >= 0
-            assert result.offsets['0'].timestamp >= 0
+            assert result.offsets['0'].sequence == -1
+            assert result.offsets['0'].timestamp == -1
             assert result.offsets['0'].version >= 0
             assert result.offsets['0'].session_id >= 0
 
             result = dh.init_and_get_subscription_offset(project_name, topic_name, sub_id, ['0'])
             print(result)
-            assert result.offsets['0'].sequence >= 0
-            assert result.offsets['0'].timestamp >= 0
+            assert result.offsets['0'].sequence == -1
+            assert result.offsets['0'].timestamp == -1
             assert result.offsets['0'].version >= 0
             assert result.offsets['0'].session_id >= 0
 
@@ -153,26 +153,26 @@ class TestOffset:
             dh.init_and_get_subscription_offset(project_name, topic_name, sub_id, '0')
             result = dh.get_subscription_offset(project_name, topic_name, sub_id, '0')
             print(result)
-            assert result.offsets['0'].sequence >= 0
-            assert result.offsets['0'].timestamp >= 0
+            assert result.offsets['0'].sequence == -1
+            assert result.offsets['0'].timestamp == -1
             assert result.offsets['0'].version >= 0
 
             result = dh.get_subscription_offset(project_name, topic_name, sub_id, ['0'])
             print(result)
-            assert result.offsets['0'].sequence >= 0
-            assert result.offsets['0'].timestamp >= 0
+            assert result.offsets['0'].sequence == -1
+            assert result.offsets['0'].timestamp == -1
             assert result.offsets['0'].version >= 0
 
             result = dh.get_subscription_offset(project_name, topic_name, sub_id)
             print(result)
-            assert result.offsets['0'].sequence >= 0
-            assert result.offsets['0'].timestamp >= 0
+            assert result.offsets['0'].sequence == -1
+            assert result.offsets['0'].timestamp == -1
             assert result.offsets['0'].version >= 0
 
             result = dh.get_subscription_offset(project_name, topic_name, sub_id, [])
             print(result)
-            assert result.offsets['0'].sequence >= 0
-            assert result.offsets['0'].timestamp >= 0
+            assert result.offsets['0'].sequence == -1
+            assert result.offsets['0'].timestamp == -1
             assert result.offsets['0'].version >= 0
 
             dh.delete_subscription(project_name, topic_name, create_result.sub_id)

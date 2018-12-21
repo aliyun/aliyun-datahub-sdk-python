@@ -261,7 +261,6 @@ class TestTopic:
 
             dh.update_topic(project_name_5, topic_name_2, 5, "new comment")
             topic_result_2 = dh.get_topic(project_name_5, topic_name_2)
-            assert topic_result_2.life_cycle == 5
             assert topic_result_2.comment == "new comment"
 
         finally:

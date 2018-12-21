@@ -304,7 +304,7 @@ class RestClient(object):
         # Automatically detect error
         if not RestClient.is_ok(resp) and self._exception_handler is not None:
             status_code = resp.status_code
-            request_id = resp.headers[Headers.REQUEST_ID]
+            request_id = resp.headers.get(Headers.REQUEST_ID, '')
             try:
                 content_data = json.loads(to_text(content))
                 error_code = content_data['ErrorCode']

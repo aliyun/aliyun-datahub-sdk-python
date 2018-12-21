@@ -19,7 +19,6 @@
 
 from __future__ import absolute_import
 
-import json
 from enum import Enum
 
 from ..utils import to_str
@@ -80,7 +79,7 @@ class ShardBase(object):
 
     @classmethod
     def from_dict(cls, dict_):
-        return cls(dict_['ShardId'], dict_['BeginHashKey'], dict_['EndHashKey'])
+        return cls(dict_.get('ShardId', ''), dict_.get('BeginHashKey', ''), dict_.get('EndHashKey', ''))
 
     def to_json(self):
         return {
@@ -251,13 +250,9 @@ class Shard(ShardBase):
 
     @classmethod
     def from_dict(cls, dict_):
-        state = ShardState(dict_['State'] if 'State' in dict_ else '')
-        closed_time = dict_['ClosedTime'] if 'ClosedTime' in dict_ else ''
-        parent_shard_ids = dict_['ParentShardIds'] if 'ParentShardIds' in dict_ else []
-        left_shard_id = dict_['LeftShardId'] if 'LeftShardId' in dict_ else ''
-        right_shard_id = dict_['RightShardId'] if 'RightShardId' in dict_ else ''
-        return cls(dict_['ShardId'], dict_['BeginHashKey'], dict_['EndHashKey'],
-                   state, closed_time, parent_shard_ids, left_shard_id, right_shard_id)
+        return cls(dict_.get('ShardId', ''), dict_.get('BeginHashKey', ''), dict_.get('EndHashKey', ''),
+                   ShardState(dict_.get('State', '')), dict_.get('ClosedTime', ''), dict_.get('ParentShardIds', []),
+                   dict_.get('LeftShardId', ''), dict_.get('RightShardId', ''))
 
     def __repr__(self):
         return to_str(self.to_json())

@@ -347,7 +347,7 @@ class TestConnector:
         assert result.config.tunnel_endpoint == tunnel_endpoint
         for shard_context in result.shard_contexts:
             assert shard_context.shard_id != ''
-            assert shard_context.current_sequence >= 0
+            assert shard_context.current_sequence >= -1
 
         dh.delete_connector(connector_test_project_name, system_time_topic_name, ConnectorType.SINK_ODPS)
 
@@ -382,7 +382,7 @@ class TestConnector:
         print(result)
         assert result.start_sequence >= 0
         assert result.end_sequence > 0
-        assert result.current_sequence >= 0
+        assert result.current_sequence >= -1
         assert result.record_time >= 0
         assert result.update_time > 0
         assert result.state == ConnectorShardStatus.CONTEXT_PLANNED
@@ -434,7 +434,7 @@ class TestConnector:
         except ResourceExistException:
             pass
 
-        states = [state for state in ConnectorState]
+        states = [ConnectorState.CONNECTOR_RUNNING, ConnectorState.CONNECTOR_PAUSED]
         for state in states:
             dh.update_connector_state(connector_test_project_name, system_time_topic_name, ConnectorType.SINK_ODPS,
                                       state)

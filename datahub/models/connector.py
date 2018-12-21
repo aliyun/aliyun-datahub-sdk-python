@@ -26,7 +26,7 @@ from enum import Enum
 import six
 
 from datahub.exceptions import DatahubException
-from ..utils import to_str, bool_to_str
+from ..utils import to_str, bool_to_str, to_text
 
 if six.PY3:
     long = int
@@ -220,10 +220,12 @@ class OdpsConnectorConfig(ConnectorConfig):
             "Project": self._project_name,
             "Table": self._table_name,
             "OdpsEndpoint": self._odps_endpoint,
-            "TunnelEndpoint": self._tunnel_endpoint,
-            "AccessId": self._access_id,
-            "AccessKey": self._access_key
+            "TunnelEndpoint": self._tunnel_endpoint
         }
+        if self._access_id:
+            data["AccessId"] = self._access_id
+        if self._access_key:
+            data["AccessKey"] = self._access_key
         if self._partition_mode:
             data['PartitionMode'] = self._partition_mode.value
         if self._time_range:
@@ -234,11 +236,10 @@ class OdpsConnectorConfig(ConnectorConfig):
 
     @classmethod
     def from_dict(cls, dict_):
-        access_id = dict_['AccessId'] if 'AccessId' in dict_ else ''
-        access_key = dict_['AccessKey'] if 'AccessKey' in dict_ else ''
-        partition_config = dict_['PartitionConfig'] if 'PartitionConfig' in dict_ else ''
-        return cls(dict_['Project'], dict_['Table'], dict_['OdpsEndpoint'], dict_['TunnelEndpoint'],
-                   access_id, access_key, PartitionMode(dict_['PartitionMode']), dict_['TimeRange'], partition_config)
+        partition_config = json.loads(to_text(dict_.get('PartitionConfig', '{}')))
+        return cls(dict_.get('Project', ''), dict_.get('Table', ''), dict_.get('OdpsEndpoint', ''),
+                   dict_.get('TunnelEndpoint', ''), dict_.get('AccessId', ''), dict_.get('AccessKey', ''),
+                   PartitionMode(dict_['PartitionMode']), dict_['TimeRange'], partition_config)
 
 
 class DatabaseConnectorConfig(ConnectorConfig):

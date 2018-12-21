@@ -26,7 +26,7 @@ column_fields对象是包含str的list，内容是topic中的field_name。
         ("mm", "%M")
     ])
 
-    connector_config = OdpsConnectorConfig(
+    odps_connector_config = OdpsConnectorConfig(
         project_name, table_name, odps_endpoint,
         tunnel_endpoint, connector_access_id, connector_access_key,
         partition_mode, time_range, partition_config)
