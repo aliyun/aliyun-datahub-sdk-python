@@ -23,7 +23,6 @@ import abc
 import json
 
 import six
-
 from cprotobuf.internal import encode_data
 
 from ..models import CursorType, RecordType, RecordSchema
@@ -438,6 +437,31 @@ class CreateConnectorParams(RequestParams):
         return json.dumps({
             "Action": "Create",
             "ColumnFields": self._column_fields,
+            "Config": self._config.to_json()
+        })
+
+
+class UpdateConnectorParams(RequestParams):
+    """
+    Request params of update data connector config api
+    """
+
+    __slots__ = '_config'
+
+    def __init__(self, config):
+        self._config = config
+
+    @property
+    def config(self):
+        return self._config
+
+    @config.setter
+    def config(self, value):
+        self._config = value
+
+    def content(self):
+        return json.dumps({
+            "Action": "Updateconfig",
             "Config": self._config.to_json()
         })
 

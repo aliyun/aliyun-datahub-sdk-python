@@ -21,6 +21,7 @@ from __future__ import absolute_import
 
 import abc
 import json
+from collections import OrderedDict
 from enum import Enum
 
 import six
@@ -236,10 +237,13 @@ class OdpsConnectorConfig(ConnectorConfig):
 
     @classmethod
     def from_dict(cls, dict_):
-        partition_config = json.loads(to_text(dict_.get('PartitionConfig', '{}')))
+        partition_config_list = json.loads(to_text(dict_.get('PartitionConfig', '{}')))
+        partition_config = OrderedDict()
+        for partition in partition_config_list:
+            partition_config[partition['key']] = partition['value']
         return cls(dict_.get('Project', ''), dict_.get('Table', ''), dict_.get('OdpsEndpoint', ''),
                    dict_.get('TunnelEndpoint', ''), dict_.get('AccessId', ''), dict_.get('AccessKey', ''),
-                   PartitionMode(dict_['PartitionMode']), dict_['TimeRange'], partition_config)
+                   PartitionMode(dict_['PartitionMode']), int(dict_['TimeRange']), partition_config)
 
 
 class DatabaseConnectorConfig(ConnectorConfig):

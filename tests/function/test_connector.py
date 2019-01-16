@@ -340,7 +340,7 @@ class TestConnector:
         print(result.config.partition_config)
         assert result.type == ConnectorType.SINK_ODPS
         assert result.column_fields == odps_connector_column_fields
-        assert result.state == ConnectorState.CONNECTOR_CREATED
+        assert result.state == ConnectorState.CONNECTOR_RUNNING
         assert result.config.project_name == odps_project_name
         assert result.config.table_name == system_time_table_name
         assert result.config.odps_endpoint == odps_endpoint
@@ -462,6 +462,84 @@ class TestConnector:
 
         dh.delete_connector(connector_test_project_name, system_time_topic_name, ConnectorType.SINK_ODPS)
 
+    def test_update_connector(self):
+        partition_config = OrderedDict([("ds", "%Y%m%d"), ("hh", "%H"), ("mm", "%M")])
+
+        connector_config = OdpsConnectorConfig(odps_project_name, system_time_table_name, odps_endpoint,
+                                               tunnel_endpoint, odps_access_id, odps_access_key,
+                                               PartitionMode.SYSTEM_TIME, 15, partition_config)
+        try:
+            dh.create_connector(connector_test_project_name, system_time_topic_name, ConnectorType.SINK_ODPS,
+                                odps_connector_column_fields, connector_config)
+        except ResourceExistException:
+            pass
+
+        time.sleep(1)
+
+        new_odps_project_name = "1"
+        new_system_time_table_name = "2"
+        new_odps_endpoint = "3"
+        new_tunnel_endpoint = "4"
+        new_odps_access_id = "5"
+        new_odps_access_key = "6"
+
+        new_partition_config = OrderedDict([("pt", "%Y%m%d"), ("ct", "%H%M")])
+        new_connector_config = OdpsConnectorConfig(new_odps_project_name, new_system_time_table_name, new_odps_endpoint,
+                                                   new_tunnel_endpoint, new_odps_access_id, new_odps_access_key,
+                                                   PartitionMode.USER_DEFINE, 30, new_partition_config)
+
+        dh.update_connector(connector_test_project_name,
+                            system_time_topic_name, ConnectorType.SINK_ODPS, new_connector_config)
+
+        config = dh.get_connector(connector_test_project_name, system_time_topic_name,
+                                  ConnectorType.SINK_ODPS).config
+        assert config.project_name == new_odps_project_name
+        assert config.table_name == new_system_time_table_name
+        assert config.odps_endpoint == new_odps_endpoint
+        assert config.tunnel_endpoint == new_tunnel_endpoint
+        assert config.partition_mode == PartitionMode.USER_DEFINE
+        for k, v in new_partition_config.items():
+            assert config.partition_config.get(k) == v
+        dh.delete_connector(connector_test_project_name, system_time_topic_name, ConnectorType.SINK_ODPS)
+
+    def test_update_connector_2(self):
+        partition_config = OrderedDict([("ds", "%Y%m%d"), ("hh", "%H"), ("mm", "%M")])
+
+        connector_config = OdpsConnectorConfig(odps_project_name, system_time_table_name, odps_endpoint,
+                                               tunnel_endpoint, odps_access_id, odps_access_key,
+                                               PartitionMode.SYSTEM_TIME, 15, partition_config)
+        try:
+            dh.create_connector(connector_test_project_name, system_time_topic_name, ConnectorType.SINK_ODPS,
+                                odps_connector_column_fields, connector_config)
+        except ResourceExistException:
+            pass
+
+        time.sleep(1)
+
+        new_connector_config = dh.get_connector(connector_test_project_name, system_time_topic_name,
+                                                ConnectorType.SINK_ODPS).config
+
+        new_connector_config.project_name = "1"
+        new_connector_config.table_name = "2"
+        new_connector_config.odps_endpoint = "3"
+        new_connector_config.tunnel_endpoint = "4"
+        new_connector_config.access_id = "5"
+        new_connector_config.access_key = "6"
+
+        dh.update_connector(connector_test_project_name,
+                            system_time_topic_name, ConnectorType.SINK_ODPS, new_connector_config)
+
+        config = dh.get_connector(connector_test_project_name, system_time_topic_name,
+                                  ConnectorType.SINK_ODPS).config
+        assert config.project_name == new_connector_config.project_name
+        assert config.table_name == new_connector_config.table_name
+        assert config.odps_endpoint == new_connector_config.odps_endpoint
+        assert config.tunnel_endpoint == new_connector_config.tunnel_endpoint
+        assert config.partition_mode == PartitionMode.SYSTEM_TIME
+        for k, v in new_connector_config.partition_config.items():
+            assert config.partition_config.get(k) == v
+        dh.delete_connector(connector_test_project_name, system_time_topic_name, ConnectorType.SINK_ODPS)
+
 
 # run directly
 if __name__ == '__main__':
@@ -481,3 +559,5 @@ if __name__ == '__main__':
     test.test_append_connector_field()
     test.test_update_connector_state()
     test.test_get_connector_done_time()
+    test.test_update_connector()
+    test.test_update_connector_2()

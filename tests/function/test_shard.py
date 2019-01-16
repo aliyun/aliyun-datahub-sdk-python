@@ -134,11 +134,14 @@ class TestShard:
 
             dh.wait_shards_ready(project_name_1, topic_name_1)
             shard_list = dh.list_shard(project_name_1, topic_name_1).shards
-            print(shard_list[0].state == ShardState.ACTIVE)
+            print(shard_list)
 
-            assert shard_list[0].state == (ShardState.CLOSED if shard_list[0].shard_id == '0' else ShardState.ACTIVE)
-            assert shard_list[1].state == (ShardState.CLOSED if shard_list[1].shard_id == '0' else ShardState.ACTIVE)
-            assert shard_list[2].state == (ShardState.CLOSED if shard_list[2].shard_id == '0' else ShardState.ACTIVE)
+            assert shard_list[0].shard_id == '0'
+            assert shard_list[0].state == ShardState.CLOSED
+            assert shard_list[1].shard_id == '1'
+            assert shard_list[1].state == ShardState.ACTIVE
+            assert shard_list[2].shard_id == '2'
+            assert shard_list[2].state == ShardState.ACTIVE
 
             time.sleep(5)
             # ======================= merge shard =======================
@@ -148,11 +151,16 @@ class TestShard:
 
             dh.wait_shards_ready(project_name_1, topic_name_1)
             shard_list = dh.list_shard(project_name_1, topic_name_1).shards
+            print(shard_list)
 
-            assert shard_list[0].state == (ShardState.ACTIVE if shard_list[0].shard_id == '3' else ShardState.CLOSED)
-            assert shard_list[1].state == (ShardState.ACTIVE if shard_list[1].shard_id == '3' else ShardState.CLOSED)
-            assert shard_list[2].state == (ShardState.ACTIVE if shard_list[2].shard_id == '3' else ShardState.CLOSED)
-            assert shard_list[3].state == (ShardState.ACTIVE if shard_list[3].shard_id == '3' else ShardState.CLOSED)
+            assert shard_list[0].shard_id == '0'
+            assert shard_list[0].state == ShardState.CLOSED
+            assert shard_list[1].shard_id == '1'
+            assert shard_list[1].state == ShardState.CLOSED
+            assert shard_list[2].shard_id == '2'
+            assert shard_list[2].state == ShardState.CLOSED
+            assert shard_list[3].shard_id == '3'
+            assert shard_list[3].state == ShardState.ACTIVE
         finally:
             clean_topic(dh, project_name_1)
             dh.delete_project(project_name_1)

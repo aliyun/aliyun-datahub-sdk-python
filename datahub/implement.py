@@ -19,11 +19,11 @@
 
 import time
 
+from .models.params import *
+from .models.results import *
 from .auth import AliyunAccount
 from .exceptions import InvalidParameterException
 from .models import ShardState, OffsetBase, SubscriptionState, FieldType, ConnectorConfig
-from .models.params import *
-from .models.results import *
 from .rest import Path
 from .rest import RestClient
 from .utils import check_project_name_valid, check_topic_name_valid, check_type, check_positive, \
@@ -262,6 +262,9 @@ class DataHubJson(object):
 
         return result
 
+    def put_records_by_shard(self, project_name, topic_name, shard_id, record_list):
+        raise DatahubException('put_records_by_shard api only support pb mode')
+
     def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num):
         return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num)
 
@@ -311,6 +314,23 @@ class DataHubJson(object):
 
         url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
         request_param = CreateConnectorParams(column_fields, config)
+
+        self._rest_client.post(url, data=request_param.content())
+
+    def update_connector(self, project_name, topic_name, connector_type, config):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+        if not check_type(connector_type, ConnectorType):
+            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
+                                            ('connector_type', ConnectorType.__name__))
+        if not check_type(config, ConnectorConfig):
+            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
+                                            ('config', ConnectorConfig.__name__))
+
+        url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
+        request_param = UpdateConnectorParams(config)
 
         self._rest_client.post(url, data=request_param.content())
 
@@ -678,6 +698,20 @@ class DataHubPB(DataHubJson):
         result = PutPBRecordsResult.parse_content(content)
 
         return result
+
+    def put_records_by_shard(self, project_name, topic_name, shard_id, record_list):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+        if check_empty(shard_id):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'shard_id')
+
+        url = Path.SHARD % (project_name, topic_name, shard_id)
+
+        request_param = PutPBRecordsRequestParams(record_list)
+
+        self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers())
 
     def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num):
         return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num)

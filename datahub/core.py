@@ -19,8 +19,8 @@
 
 from __future__ import absolute_import
 
-from .models import CompressFormat
 from .implement import DataHubJson, DataHubPB
+from .models import CompressFormat
 
 
 class DataHub(object):
@@ -56,7 +56,7 @@ class DataHub(object):
     >>>
     """
 
-    def __init__(self, access_id, access_key, endpoint=None, enable_pb=False,
+    def __init__(self, access_id, access_key, endpoint=None, enable_pb=True,
                  compress_format=CompressFormat.NONE, **kwargs):
         if enable_pb:
             self._datahub_impl = DataHubPB(access_id, access_key, endpoint, compress_format, **kwargs)
@@ -308,6 +308,27 @@ class DataHub(object):
         """
         return self._datahub_impl.put_records(project_name, topic_name, record_list)
 
+    def put_records_by_shard(self, project_name, topic_name, shard_id, record_list):
+        """
+        Put records to specific shard of topic
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param shard_id: shard id
+        :param record_list: record list
+        :type record_list: :class:`list`
+        :return: failed records info
+        :rtype: :class:`datahub.models.PutRecordsResult`
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if the record is not well-formed; project_name, topic_name or shard_id is empty
+        :raise: :class:`datahub.exceptions.InvalidOperationException` if the shard is not active
+        :raise: :class:`datahub.exceptions.LimitExceededException` if query rate or throughput rate limit exceeded
+        :raise: :class:`datahub.exceptions.DatahubException` if crc is wrong in pb mode
+
+        .. see also:: :class:`datahub.models.Record`
+        """
+        return self._datahub_impl.put_records_by_shard(project_name, topic_name, shard_id, record_list)
+
     def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num):
         """
         Get records from a topic
@@ -389,6 +410,19 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.InvalidParameterException` if the column field or config is invalid; project_name or topic_name is empty; connector_type or config is wrong type
         """
         self._datahub_impl.create_connector(project_name, topic_name, connector_type, column_fields, config)
+
+    def update_connector(self, project_name, topic_name, connector_type, config):
+        """
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_type: connector type
+        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param config: connector config
+        :type config: :class:`datahub.models.ConnectorConfig`
+        :return: none
+        """
+        self._datahub_impl.update_connector(project_name, topic_name, connector_type, config)
 
     def get_connector(self, project_name, topic_name, connector_type):
         """

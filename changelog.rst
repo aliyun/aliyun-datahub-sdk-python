@@ -1,6 +1,22 @@
 Changelog
 ================
 
+Version 2.12.0
+-----------------
+
++ update connector
++ put record by shard id
+
+Version 2.11.5
+-----------------
+
++ some compatibility
+
+Version 2.11.4
+-----------------
+
++ fix response without request-id
+
 Version 2.11.3
 -----------------
 

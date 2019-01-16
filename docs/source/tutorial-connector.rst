@@ -26,7 +26,7 @@ column_fields对象是包含str的list，内容是topic中的field_name。
         ("mm", "%M")
     ])
 
-    odps_connector_config = OdpsConnectorConfig(
+    connector_config = OdpsConnectorConfig(
         project_name, table_name, odps_endpoint,
         tunnel_endpoint, connector_access_id, connector_access_key,
         partition_mode, time_range, partition_config)
@@ -60,6 +60,47 @@ ReplaceInto与IgnoreInto： ReplaceInto模式下，会使用replace into语句�
 
 更多connector相关详细定义：
 :ref:`connector`
+
+更新connector
+-----------------
+
+* update_connector接口更新指定的connector配置
+
+.. code-block:: python
+
+    dh.update_connector(project_name, topic_name, connector_type, connector_config)
+
+通过指定(project_name, topic_name, connector_type）三个参数确定唯一的connector,connector_config是ConnectorConfig对象。
+
+.. code-block:: python
+
+    # 直接构造新的connector_config
+    new_odps_project_name = "1"
+    new_system_time_table_name = "2"
+    new_odps_endpoint = "3"
+    new_tunnel_endpoint = "4"
+    new_odps_access_id = "5"
+    new_odps_access_key = "6"
+
+    new_partition_config = OrderedDict([("pt", "%Y%m%d"), ("ct", "%H%M")])
+    new_connector_config = OdpsConnectorConfig(new_odps_project_name, new_system_time_table_name, new_odps_endpoint,
+                                               new_tunnel_endpoint, new_odps_access_id, new_odps_access_key,
+                                               PartitionMode.USER_DEFINE, 30, new_partition_config)
+
+    dh.update_connector(cproject_name, topic_name, ConnectorType.SINK_ODPS, new_connector_config)
+
+    #获取原本的connector_config进行部分修改
+    new_connector_config = dh.get_connector(connector_test_project_name, system_time_topic_name,
+                                                ConnectorType.SINK_ODPS).config
+
+    new_connector_config.project_name = "1"
+    new_connector_config.table_name = "2"
+    new_connector_config.odps_endpoint = "3"
+    new_connector_config.tunnel_endpoint = "4"
+    new_connector_config.access_id = "5"
+    new_connector_config.access_key = "6"
+
+    dh.update_connector(project_name, topic_name, ConnectorType.SINK_ODPS, new_connector_config)
 
 删除connector
 -----------------

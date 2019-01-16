@@ -125,26 +125,43 @@ print(shards_result)
 # ============================= put tuple records =============================
 
 from datahub.models import TupleRecord
+
+# put records by shard is recommended
 records0 = []
 record0 = TupleRecord(schema=record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
-record0.shard_id = '0'
 record0.put_attribute('AK', '47')
 records0.append(record0)
-put_result = dh.put_records('pydatahub_test', 'tuple_topic_test', records0)
+put_result = dh.put_records_by_shard('pydatahub_test', 'tuple_topic_test', "0", records0)
+
+# records0 = []
+# record0 = TupleRecord(schema=record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
+# record0.shard_id = '0'
+# record0.put_attribute('AK', '47')
+# records0.append(record0)
+# put_result = dh.put_records('pydatahub_test', 'tuple_topic_test', records0)
 print(put_result)
 
 # ============================= put blob records =============================
 
 from datahub.models import BlobRecord
+
+# put records by shard is recommended
 data = None
 with open(os.path.join(root_path, 'tests/resources/datahub.png'), 'rb') as f:
     data = f.read()
 records1 = []
 record1 = BlobRecord(blob_data=data)
-record1.shard_id = '0'
 record1.put_attribute('a', 'b')
 records1.append(record1)
-put_result = dh.put_records('pydatahub_test', 'blob_topic_test', records1)
+put_result = dh.put_records_by_shard('pydatahub_test', 'blob_topic_test', "0" records1)
+
+# records1 = []
+# record1 = BlobRecord(blob_data=data)
+# record1.shard_id = '0'
+# record1.put_attribute('a', 'b')
+# records1.append(record1)
+# put_result = dh.put_records('pydatahub_test', 'blob_topic_test', records1)
+
 print(put_result)
 
 # ============================= get cursor =============================
