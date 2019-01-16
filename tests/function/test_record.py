@@ -115,7 +115,7 @@ class TestRecord:
             # put tuple records
             failed_records = []
             record = TupleRecord(schema=record_schema,
-                                 values=[99, 'yc1', 10.01, True, 1455869335000000,
+                                 values=[99, 'yc1', 10.01, None, 1455869335000000,
                                          decimal.Decimal('12.2219999999999995310417943983338773250579833984375')])
 
             # write by partition key

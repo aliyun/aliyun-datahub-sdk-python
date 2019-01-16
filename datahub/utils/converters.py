@@ -64,4 +64,6 @@ def to_str(text, encoding='utf-8'):
 
 
 def bool_to_str(value):
+    if value is None:
+        return to_str(None)
     return to_str(value).lower()

@@ -1,6 +1,16 @@
 Changelog
 ================
 
+Version 2.12.2
+-----------------
+
++ fix None value for bool field in record
+
+Version 2.12.1
+-----------------
+
++ fix implement bug
+
 Version 2.12.0
 -----------------
 
