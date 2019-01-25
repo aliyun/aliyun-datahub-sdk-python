@@ -19,6 +19,7 @@
 
 from __future__ import absolute_import
 
+import re
 import abc
 import base64
 from enum import Enum
@@ -308,6 +309,9 @@ class TupleRecord(Record):
         for val in self._values:
             if FieldType.BOOLEAN == self._field_list[index].type:
                 new_values.append(bool_to_str(val))
+            elif FieldType.DOUBLE == self._field_list[index].type:
+                double_str = re.sub(r'0+e', 'e', '%.16e' % val) if val is not None else None
+                new_values.append(to_str(double_str))
             else:
                 new_values.append(to_str(val))
             index += 1

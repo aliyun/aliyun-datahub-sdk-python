@@ -1,6 +1,21 @@
 Changelog
 ================
 
+Version 2.12.5
+-----------------
+
++ fix double field convert precision
+
+Version 2.12.4
+-----------------
+
++ fix user define mode connector config param
+
+Version 2.12.3
+-----------------
+
++ fix user define mode get connector key not found
+
 Version 2.12.2
 -----------------
 

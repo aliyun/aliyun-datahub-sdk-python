@@ -229,7 +229,7 @@ class OdpsConnectorConfig(ConnectorConfig):
             data["AccessKey"] = self._access_key
         if self._partition_mode:
             data['PartitionMode'] = self._partition_mode.value
-        if self._time_range:
+        if self._time_range and self._time_range > 0:
             data['TimeRange'] = self._time_range
         if self._partition_config:
             data['PartitionConfig'] = self._partition_config
@@ -243,7 +243,7 @@ class OdpsConnectorConfig(ConnectorConfig):
             partition_config[partition['key']] = partition['value']
         return cls(dict_.get('Project', ''), dict_.get('Table', ''), dict_.get('OdpsEndpoint', ''),
                    dict_.get('TunnelEndpoint', ''), dict_.get('AccessId', ''), dict_.get('AccessKey', ''),
-                   PartitionMode(dict_['PartitionMode']), int(dict_['TimeRange']), partition_config)
+                   PartitionMode(dict_['PartitionMode']), int(dict_.get('TimeRange', -1)), partition_config)
 
 
 class DatabaseConnectorConfig(ConnectorConfig):
