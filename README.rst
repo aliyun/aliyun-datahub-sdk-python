@@ -173,16 +173,18 @@ Usage
 
     # ============================= get blob records =============================
 
+    limit = 10
     blob_cursor_result = dh.get_cursor(project_name, topic_name, '0', CursorType.OLDEST)
-    get_result = dh.get_blob_records(project_name, topic_name, '0', blob_cursor_result.cursor, 10)
+    get_result = dh.get_blob_records(project_name, topic_name, '0', blob_cursor_result.cursor, limit)
     print(get_result)
     print(get_result.records)
     print(get_result.records[0])
 
     # ============================= get tuple records =============================
 
+    limit = 10
     tuple_cursor_result = dh.get_cursor(project_name, topic_name, '0', CursorType.OLDEST)
-    get_result = dh.get_tuple_records(project_name, topic_name, '0', record_schema, tuple_cursor_result.cursor, 10)
+    get_result = dh.get_tuple_records(project_name, topic_name, '0', record_schema, tuple_cursor_result.cursor, limit)
     print(get_result)
     print(get_result.records)
     print(get_result.records[0].values)
