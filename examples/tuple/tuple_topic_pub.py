@@ -64,7 +64,7 @@ try:
     # block等待所有shard状态ready
     dh.wait_shards_ready(project_name, topic_name)
 
-    topic = dh.get_topic(topic_name, project_name)
+    topic = dh.get_topic(project_name, topic_name)
     print("get topic suc! topic=%s" % str(topic))
     if topic.record_type != RecordType.TUPLE:
         print("topic type illegal!")
