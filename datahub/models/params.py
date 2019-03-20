@@ -685,6 +685,46 @@ class UpdateConnectorStateParams(RequestParams):
         })
 
 
+class UpdateConnectorOffsetParams(RequestParams):
+    """
+    Request params of update connector state
+    """
+
+    __slots__ = ('_shard_id', '_connector_offset')
+
+    def __init__(self, shard_id, connector_offset):
+        self._shard_id = shard_id
+        self._connector_offset = connector_offset
+
+    @property
+    def shard_id(self):
+        return self._shard_id
+
+    @shard_id.setter
+    def shard_id(self, value):
+        self._shard_id = value
+
+    @property
+    def connector_offset(self):
+        return self._connector_offset
+
+    @connector_offset.setter
+    def connector_offset(self, value):
+        self._connector_offset = value
+
+    def content(self):
+        data = {
+            'Action': 'UpdateShardContext',
+            'ShardId': self._shard_id
+        }
+        if self._connector_offset.sequence > -1:
+            data["CurrentSequence"] = self._connector_offset.sequence
+        if self._connector_offset.timestamp > -1:
+            data["CurrentTime"] = self._connector_offset.timestamp
+
+        return json.dumps(data)
+
+
 class UpdateConnectorShardContextParams(RequestParams):
     """
     Request params of update connector shard context

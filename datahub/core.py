@@ -576,6 +576,23 @@ class DataHub(object):
         """
         self._datahub_impl.update_connector_state(project_name, topic_name, connector_type, connector_state)
 
+    def update_connector_offset(self, project_name, topic_name, connector_type, shard_id, connector_offset):
+        """
+        Update data connector offset
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_type: connector type
+        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param shard_id: shard id
+        :param connector_offset: current sequence
+        :type connector_offset: :class:`datahub.models.ConnectorOffset`
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type or connector_state is wrong type
+        """
+        self._datahub_impl.update_connector_offset(project_name, topic_name, connector_type, shard_id, connector_offset)
+
     def create_subscription(self, project_name, topic_name, comment):
         """
         Create subscription to a topic

@@ -1,9 +1,10 @@
 Changelog
 ================
-Version 2.11.4
+
+Version 2.12.6
 -----------------
 
-+ fix empty response with status code > 299
++ add update connector offset
 
 Version 2.12.5
 -----------------

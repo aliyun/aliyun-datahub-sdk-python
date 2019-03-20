@@ -86,6 +86,38 @@ class ConnectorShardStatus(Enum):
     CONTEXT_DELETED = 'CONTEXT_DELETED'
 
 
+class ConnectorOffset(object):
+    """
+    Connector offset
+
+    Members:
+        sequence (:class:`int`): sequence
+
+        timestamp (:class:`int`): timestamp
+    """
+    __slots__ = ('_sequence', '_timestamp')
+
+    def __init__(self, sequence=-1, timestamp=-1):
+        self._sequence = sequence
+        self._timestamp = timestamp
+
+    @property
+    def sequence(self):
+        return self._sequence
+
+    @sequence.setter
+    def sequence(self, value):
+        self._sequence = value
+
+    @property
+    def timestamp(self):
+        return self._timestamp
+
+    @timestamp.setter
+    def timestamp(self, value):
+        self._timestamp = value
+
+
 @six.add_metaclass(abc.ABCMeta)
 class ConnectorConfig(object):
     """

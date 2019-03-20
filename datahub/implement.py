@@ -510,6 +510,20 @@ class DataHubJson(object):
 
         self._rest_client.post(url, data=request_param.content())
 
+    def update_connector_offset(self, project_name, topic_name, connector_type, shard_id, connector_offset):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+        if not check_type(connector_type, ConnectorType):
+            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
+                                            ('connector_type', ConnectorType.__name__))
+
+        url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
+        request_param = UpdateConnectorOffsetParams(shard_id, connector_offset)
+
+        self._rest_client.post(url, data=request_param.content())
+
     def create_subscription(self, project_name, topic_name, comment):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
