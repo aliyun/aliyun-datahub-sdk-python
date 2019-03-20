@@ -79,10 +79,10 @@ OffsetWithVersion类是OffsetWithSession的父类，只包含sequence, timestamp
 详细定义：
 :ref:`offset`
 
-获取offset
+重置offset
 -----------
 
-* update_subscription_offset接口能够重置offset信息并更新version
+* reset_subscription_offset接口能够重置offset信息并更新version
 
 .. code-block:: python
 
