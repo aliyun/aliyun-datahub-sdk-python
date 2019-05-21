@@ -29,8 +29,8 @@ Datahub Python SDK提供的所有API接口均由 ``datahub.DataHub`` 类实现�
     access_id = ***your access id***
     access_key = ***your access key***
     endpoint = ***your datahub server endpoint***
-    dh = DataHub(access_id, access_key, endpoint) # default mode: not support protobuf for datahub <= 2.11
-    dh = DataHub(access_id, access_key, endpoint, enable_pb=True) # support protobuf when put/get record, for datahub > 2.11
+    dh = DataHub(access_id, access_key, endpoint, enable_pb=False) # Json mode: for datahub server version <= 2.11
+    dh = DataHub(access_id, access_key, endpoint) # Use protobuf when put/get record, for datahub server version > 2.11
     dh = DataHub(access_id, access_key, endpoint, compress_format=CompressFormat.LZ4) # use lz4 compression when put/get record
 
 更多详细定义：
