@@ -109,7 +109,7 @@ topic_name='blob_topic_test'
 shard_count = 3
 life_cycle = 7
 comment = 'blob topic'
-dh.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, comment)
+dh.create_blob_topic(project_name, topic_name, shard_count, life_cycle, comment)
 
 # ============================= get topic =============================
 
