@@ -13,3 +13,4 @@ pip install ./cprotobuf-0.1.9.tar.gz
 pip install ./requests-2.18.4-py2.py3-none-any.whl
 pip install ./pytest-runner-4.2.tar.gz
 pip install ./lz4-2.0.0.tar.gz
+pip install ./funcsigs-1.0.2-py2.py3-none-any.whl

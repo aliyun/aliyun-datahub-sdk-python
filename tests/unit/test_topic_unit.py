@@ -16,48 +16,30 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
 import json
-import os
+import sys
 
-from httmock import HTTMock, urlmatch, response
+sys.path.append('./')
+from httmock import HTTMock
 
 from datahub import DataHub
 from datahub.exceptions import InvalidParameterException, ResourceNotFoundException, ResourceExistException
 from datahub.models import RecordSchema, FieldType, RecordType
-
-_TESTS_PATH = os.path.abspath(os.path.dirname(__file__))
-_FIXTURE_PATH = os.path.join(_TESTS_PATH, '../fixtures')
+from .unittest_util import gen_mock_api
 
 dh = DataHub('access_id', 'access_key', 'http://endpoint')
-
-
-@urlmatch(netloc=r'(.*\.)?endpoint')
-def datahub_api_mock(url, request):
-    path = url.path.replace('/', '.')[1:]
-    res_file = os.path.join(_FIXTURE_PATH, '%s.json' % path)
-    status_code = 200
-    content = {
-    }
-    headers = {
-        'Content-Type': 'application/json',
-        'x-datahub-request-id': 0
-    }
-    try:
-        with open(res_file, 'rb') as f:
-            content = json.loads(f.read().decode('utf-8'))
-            if 'ErrorCode' in content:
-                status_code = 500
-    except (IOError, ValueError) as e:
-        content['ErrorMessage'] = 'Loads fixture %s failed, error: %s' % (res_file, e)
-    return response(status_code, content, headers, request=request)
 
 
 class TestTopic:
 
     def test_list_topic_success(self):
         project_name = 'success'
-        with HTTMock(datahub_api_mock):
+
+        def check(request):
+            assert request.method == 'GET'
+            assert request.url == 'http://endpoint/projects/success/topics'
+
+        with HTTMock(gen_mock_api(check)):
             result = dh.list_topic(project_name)
         print(result)
         assert 'topic_name_1' in result.topic_names
@@ -65,7 +47,11 @@ class TestTopic:
     def test_list_topic_with_unexisted_project_name(self):
         project_name = 'unexisted'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'GET'
+                assert request.url == 'http://endpoint/projects/unexisted/topics'
+
+            with HTTMock(gen_mock_api(check)):
                 result = dh.list_topic(project_name)
         except ResourceNotFoundException:
             pass
@@ -90,7 +76,28 @@ class TestTopic:
             ['bigint_field', 'string_field', 'double_field', 'bool_field', 'event_time1'],
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/success/topics/success'
+            content = json.loads(request.body)
+            assert content['Comment'] == 'comment'
+            assert content['Lifecycle'] == 7
+            assert content['ShardCount'] == 3
+            if content['RecordType'] == 'TUPLE':
+                schema = json.loads(content['RecordSchema'])
+                assert len(schema['fields']) == 5
+                assert schema['fields'][0]['type'] == 'bigint'
+                assert schema['fields'][0]['name'] == 'bigint_field'
+                assert schema['fields'][1]['type'] == 'string'
+                assert schema['fields'][1]['name'] == 'string_field'
+                assert schema['fields'][2]['type'] == 'double'
+                assert schema['fields'][2]['name'] == 'double_field'
+                assert schema['fields'][3]['type'] == 'boolean'
+                assert schema['fields'][3]['name'] == 'bool_field'
+                assert schema['fields'][4]['type'] == 'timestamp'
+                assert schema['fields'][4]['name'] == 'event_time1'
+
+        with HTTMock(gen_mock_api(check)):
             dh.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, record_schema, 'comment')
             dh.create_blob_topic(project_name, topic_name, shard_count, life_cycle, 'comment')
 
@@ -103,8 +110,29 @@ class TestTopic:
             ['bigint_field', 'string_field', 'double_field', 'bool_field', 'event_time1'],
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/existed/topics/existed'
+            content = json.loads(request.body)
+            assert content['Comment'] == 'comment'
+            assert content['Lifecycle'] == 7
+            assert content['ShardCount'] == 3
+            if content['RecordType'] == 'TUPLE':
+                schema = json.loads(content['RecordSchema'])
+                assert len(schema['fields']) == 5
+                assert schema['fields'][0]['type'] == 'bigint'
+                assert schema['fields'][0]['name'] == 'bigint_field'
+                assert schema['fields'][1]['type'] == 'string'
+                assert schema['fields'][1]['name'] == 'string_field'
+                assert schema['fields'][2]['type'] == 'double'
+                assert schema['fields'][2]['name'] == 'double_field'
+                assert schema['fields'][3]['type'] == 'boolean'
+                assert schema['fields'][3]['name'] == 'bool_field'
+                assert schema['fields'][4]['type'] == 'timestamp'
+                assert schema['fields'][4]['name'] == 'event_time1'
+
         try:
-            with HTTMock(datahub_api_mock):
+            with HTTMock(gen_mock_api(check)):
                 dh.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, record_schema, 'comment')
         except ResourceExistException:
             pass
@@ -112,7 +140,7 @@ class TestTopic:
             raise Exception('create success with topic already existed!')
 
         try:
-            with HTTMock(datahub_api_mock):
+            with HTTMock(gen_mock_api(check)):
                 dh.create_blob_topic(project_name, topic_name, shard_count, life_cycle, 'comment')
         except ResourceExistException:
             pass
@@ -171,8 +199,30 @@ class TestTopic:
         record_schema = RecordSchema.from_lists(
             ['bigint_field', 'string_field', 'double_field', 'bool_field', 'event_time1'],
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
+
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/unexisted/topics/valid'
+            content = json.loads(request.body)
+            assert content['Comment'] == 'comment'
+            assert content['Lifecycle'] == 7
+            assert content['ShardCount'] == 3
+            if content['RecordType'] == 'TUPLE':
+                schema = json.loads(content['RecordSchema'])
+                assert len(schema['fields']) == 5
+                assert schema['fields'][0]['type'] == 'bigint'
+                assert schema['fields'][0]['name'] == 'bigint_field'
+                assert schema['fields'][1]['type'] == 'string'
+                assert schema['fields'][1]['name'] == 'string_field'
+                assert schema['fields'][2]['type'] == 'double'
+                assert schema['fields'][2]['name'] == 'double_field'
+                assert schema['fields'][3]['type'] == 'boolean'
+                assert schema['fields'][3]['name'] == 'bool_field'
+                assert schema['fields'][4]['type'] == 'timestamp'
+                assert schema['fields'][4]['name'] == 'event_time1'
+
         try:
-            with HTTMock(datahub_api_mock):
+            with HTTMock(gen_mock_api(check)):
                 dh.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, record_schema, 'comment')
         except ResourceNotFoundException:
             pass
@@ -180,7 +230,7 @@ class TestTopic:
             raise Exception('create success with unexisted project name!')
 
         try:
-            with HTTMock(datahub_api_mock):
+            with HTTMock(gen_mock_api(check)):
                 dh.create_blob_topic(project_name, topic_name, shard_count, life_cycle, 'comment')
         except ResourceNotFoundException:
             pass
@@ -242,7 +292,12 @@ class TestTopic:
     def test_get_topic_success(self):
         project_name = 'success'
         topic_name = 'tuple'
-        with HTTMock(datahub_api_mock):
+
+        def check(request):
+            assert request.method == 'GET'
+            assert request.url == 'http://endpoint/projects/success/topics/tuple'
+
+        with HTTMock(gen_mock_api(check)):
             tuple_topic_result = dh.get_topic(project_name, topic_name)
         assert tuple_topic_result.project_name == project_name
         assert tuple_topic_result.topic_name == topic_name
@@ -259,10 +314,16 @@ class TestTopic:
         for index in range(0, len(record_schema.field_list)):
             assert record_schema.field_list[index].name == tuple_topic_result.record_schema.field_list[index].name
             assert record_schema.field_list[index].type == tuple_topic_result.record_schema.field_list[index].type
-            assert record_schema.field_list[index].allow_null == tuple_topic_result.record_schema.field_list[index].allow_null
+            assert record_schema.field_list[index].allow_null == tuple_topic_result.record_schema.field_list[
+                index].allow_null
 
         topic_name = 'blob'
-        with HTTMock(datahub_api_mock):
+
+        def check(request):
+            assert request.method == 'GET'
+            assert request.url == 'http://endpoint/projects/success/topics/blob'
+
+        with HTTMock(gen_mock_api(check)):
             blob_topic_result = dh.get_topic(project_name, topic_name)
         assert blob_topic_result.project_name == project_name
         assert blob_topic_result.topic_name == topic_name
@@ -278,7 +339,11 @@ class TestTopic:
         topic_name = 'valid'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'GET'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid'
+
+            with HTTMock(gen_mock_api(check)):
                 get_result = dh.get_topic(project_name, topic_name)
         except ResourceNotFoundException:
             pass
@@ -290,7 +355,11 @@ class TestTopic:
         topic_name = 'unexisted'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'GET'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted'
+
+            with HTTMock(gen_mock_api(check)):
                 get_result = dh.get_topic(project_name, topic_name)
         except ResourceNotFoundException:
             pass
@@ -324,7 +393,14 @@ class TestTopic:
         topic_name = 'success'
         new_life_cycle = 10
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'PUT'
+            assert request.url == 'http://endpoint/projects/success/topics/success'
+            content = json.loads(request.body)
+            assert content['Comment'] == 'new comment'
+            assert content['Lifecycle'] == 10
+
+        with HTTMock(gen_mock_api(check)):
             dh.update_topic(project_name, topic_name, new_life_cycle, 'new comment')
 
     def test_update_topic_with_invalid_life_cycle(self):
@@ -355,7 +431,14 @@ class TestTopic:
         new_life_cycle = 10
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'PUT'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid'
+                content = json.loads(request.body)
+                assert content['Comment'] == 'new comment'
+                assert content['Lifecycle'] == 10
+
+            with HTTMock(gen_mock_api(check)):
                 dh.update_topic(project_name, topic_name, new_life_cycle, 'new comment')
         except ResourceNotFoundException:
             pass
@@ -368,7 +451,14 @@ class TestTopic:
         new_life_cycle = 10
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'PUT'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted'
+                content = json.loads(request.body)
+                assert content['Comment'] == 'new comment'
+                assert content['Lifecycle'] == 10
+
+            with HTTMock(gen_mock_api(check)):
                 dh.update_topic(project_name, topic_name, new_life_cycle, 'new comment')
         except ResourceNotFoundException:
             pass
@@ -403,7 +493,11 @@ class TestTopic:
         project_name = 'success'
         topic_name = 'success'
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'DELETE'
+            assert request.url == 'http://endpoint/projects/success/topics/success'
+
+        with HTTMock(gen_mock_api(check)):
             dh.delete_topic(project_name, topic_name)
 
     def test_delete_topic_with_unexisted_project_name(self):
@@ -411,7 +505,11 @@ class TestTopic:
         topic_name = 'valid'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'DELETE'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid'
+
+            with HTTMock(gen_mock_api(check)):
                 dh.delete_topic(project_name, topic_name)
         except ResourceNotFoundException:
             pass
@@ -423,7 +521,11 @@ class TestTopic:
         topic_name = 'unexisted'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'DELETE'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted'
+
+            with HTTMock(gen_mock_api(check)):
                 dh.delete_topic(project_name, topic_name)
         except ResourceNotFoundException:
             pass
@@ -455,18 +557,34 @@ class TestTopic:
     def test_append_filed_success(self):
         project_name = 'success'
         topic_name = 'success'
-        filed_name = 'bool_filed'
+        filed_name = 'double_field'
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/success/topics/success'
+            content = json.loads(request.body)
+            assert content['FieldName'] == 'double_field'
+            assert content['FieldType'] == 'double'
+            assert content['Action'] == 'appendfield'
+
+        with HTTMock(gen_mock_api(check)):
             dh.append_field(project_name, topic_name, filed_name, FieldType.DOUBLE)
 
     def test_append_field_with_unexisted_project_name(self):
         project_name = 'unexisted'
         topic_name = 'valid'
-        filed_name = 'bool_filed'
+        filed_name = 'double_field'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid'
+                content = json.loads(request.body)
+                assert content['FieldName'] == 'double_field'
+                assert content['FieldType'] == 'double'
+                assert content['Action'] == 'appendfield'
+
+            with HTTMock(gen_mock_api(check)):
                 dh.append_field(project_name, topic_name, filed_name, FieldType.DOUBLE)
         except ResourceNotFoundException:
             pass
@@ -476,10 +594,18 @@ class TestTopic:
     def test_append_field_with_unexisted_topic_name(self):
         project_name = 'valid'
         topic_name = 'unexisted'
-        filed_name = 'bool_filed'
+        filed_name = 'double_field'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted'
+                content = json.loads(request.body)
+                assert content['FieldName'] == 'double_field'
+                assert content['FieldType'] == 'double'
+                assert content['Action'] == 'appendfield'
+
+            with HTTMock(gen_mock_api(check)):
                 dh.append_field(project_name, topic_name, filed_name, FieldType.DOUBLE)
         except ResourceNotFoundException:
             pass

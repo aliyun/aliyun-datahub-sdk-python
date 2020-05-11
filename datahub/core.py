@@ -19,8 +19,10 @@
 
 from __future__ import absolute_import
 
+from .utils import type_assert
 from .implement import DataHubJson, DataHubPB
-from .models import CompressFormat
+from .models import CompressFormat, RecordSchema, FieldType, CursorType, ConnectorType, ConnectorConfig,\
+    ConnectorState, ConnectorOffset, SubscriptionState
 
 
 class DataHub(object):
@@ -72,6 +74,7 @@ class DataHub(object):
         """
         return self._datahub_impl.list_project()
 
+    @type_assert(object, str, str)
     def create_project(self, project_name, comment):
         """
         Create a new project by given name and comment
@@ -84,6 +87,7 @@ class DataHub(object):
         """
         self._datahub_impl.create_project(project_name, comment)
 
+    @type_assert(object, str)
     def get_project(self, project_name):
         """
         Get a project by given name
@@ -98,6 +102,20 @@ class DataHub(object):
         """
         return self._datahub_impl.get_project(project_name)
 
+    @type_assert(object, str, str)
+    def update_project(self, project_name, comment):
+        """
+        Update project comment
+
+        :param project_name: project name
+        :param comment: new description of project
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if project not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is empty or comment is invalid
+        """
+        return self._datahub_impl.update_project(project_name, comment)
+
+    @type_assert(object, str)
     def delete_project(self, project_name):
         """
         Delete the project by given name
@@ -108,6 +126,7 @@ class DataHub(object):
         """
         self._datahub_impl.delete_project(project_name)
 
+    @type_assert(object, str)
     def list_topic(self, project_name):
         """
         Get all topics of a project
@@ -120,6 +139,7 @@ class DataHub(object):
         """
         return self._datahub_impl.list_topic(project_name)
 
+    @type_assert(object, str, str, int, int, str)
     def create_blob_topic(self, project_name, topic_name, shard_count, life_cycle, comment):
         """
         Create blob topic
@@ -136,6 +156,7 @@ class DataHub(object):
         """
         self._datahub_impl.create_blob_topic(project_name, topic_name, shard_count, life_cycle, comment)
 
+    @type_assert(object, str, str, int, int, RecordSchema, str)
     def create_tuple_topic(self, project_name, topic_name, shard_count, life_cycle, record_schema, comment):
         """
         Create tuple topic
@@ -154,6 +175,7 @@ class DataHub(object):
         """
         self._datahub_impl.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, record_schema, comment)
 
+    @type_assert(object, str, str)
     def get_topic(self, project_name, topic_name):
         """
         Get a topic
@@ -167,6 +189,7 @@ class DataHub(object):
         """
         return self._datahub_impl.get_topic(project_name, topic_name)
 
+    @type_assert(object, str, str, int, str)
     def update_topic(self, project_name, topic_name, life_cycle, comment):
         """
         Update topic info, only life cycle and comment can be modified.
@@ -181,6 +204,7 @@ class DataHub(object):
         """
         self._datahub_impl.update_topic(project_name, topic_name, life_cycle, comment)
 
+    @type_assert(object, str, str)
     def delete_topic(self, project_name, topic_name):
         """
         Delete a topic
@@ -193,6 +217,7 @@ class DataHub(object):
         """
         self._datahub_impl.delete_topic(project_name, topic_name)
 
+    @type_assert(object, str, str, str, FieldType)
     def append_field(self, project_name, topic_name, field_name, field_type):
         """
         Append field to a tuple topic
@@ -207,6 +232,7 @@ class DataHub(object):
         """
         self._datahub_impl.append_field(project_name, topic_name, field_name, field_type)
 
+    @type_assert(object, str, str, int)
     def wait_shards_ready(self, project_name, topic_name, timeout=30):
         """
         Wait all shard state in ``active`` or ``closed``.
@@ -223,6 +249,7 @@ class DataHub(object):
         """
         self._datahub_impl.wait_shards_ready(project_name, topic_name, timeout)
 
+    @type_assert(object, str, str)
     def list_shard(self, project_name, topic_name):
         """
         List all shards of a topic
@@ -236,6 +263,7 @@ class DataHub(object):
         """
         return self._datahub_impl.list_shard(project_name, topic_name)
 
+    @type_assert(object, str, str, str, str)
     def merge_shard(self, project_name, topic_name, shard_id, adj_shard_id):
         """
         Merge shards
@@ -253,6 +281,7 @@ class DataHub(object):
         """
         return self._datahub_impl.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
 
+    @type_assert(object, str, str, str, str)
     def split_shard(self, project_name, topic_name, shard_id, split_key=''):
         """
         Split shard
@@ -270,6 +299,7 @@ class DataHub(object):
         """
         return self._datahub_impl.split_shard(project_name, topic_name, shard_id, split_key)
 
+    @type_assert(object, str, str, str, CursorType, int)
     def get_cursor(self, project_name, topic_name, shard_id, cursor_type, param=-1):
         """
         Get cursor.
@@ -288,6 +318,7 @@ class DataHub(object):
         """
         return self._datahub_impl.get_cursor(project_name, topic_name, shard_id, cursor_type, param)
 
+    @type_assert(object, str, str, list)
     def put_records(self, project_name, topic_name, record_list):
         """
         Put records to a topic
@@ -308,6 +339,7 @@ class DataHub(object):
         """
         return self._datahub_impl.put_records(project_name, topic_name, record_list)
 
+    @type_assert(object, str, str, str, list)
     def put_records_by_shard(self, project_name, topic_name, shard_id, record_list):
         """
         Put records to specific shard of topic
@@ -329,6 +361,7 @@ class DataHub(object):
         """
         return self._datahub_impl.put_records_by_shard(project_name, topic_name, shard_id, record_list)
 
+    @type_assert(object, str, str, str, str, int)
     def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num):
         """
         Get records from a topic
@@ -346,6 +379,7 @@ class DataHub(object):
         """
         return self._datahub_impl.get_blob_records(project_name, topic_name, shard_id, cursor, limit_num)
 
+    @type_assert(object, str, str, str, RecordSchema, str, int)
     def get_tuple_records(self, project_name, topic_name, shard_id, record_schema, cursor, limit_num):
         """
         Get records from a topic
@@ -354,6 +388,7 @@ class DataHub(object):
         :param topic_name: topic name
         :param shard_id: shard id
         :param record_schema: tuple record schema
+        :param filter_: filter
         :type record_schema: :class:`datahub.models.RecordSchema`
         :param cursor: the cursor
         :param limit_num: record number need to read
@@ -366,6 +401,7 @@ class DataHub(object):
         return self._datahub_impl.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor,
                                                     limit_num)
 
+    @type_assert(object, str, str, str)
     def get_metering_info(self, project_name, topic_name, shard_id):
         """
         Get a shard metering info
@@ -380,6 +416,7 @@ class DataHub(object):
         """
         return self._datahub_impl.get_metering_info(project_name, topic_name, shard_id)
 
+    @type_assert(object, str, str)
     def list_connector(self, project_name, topic_name):
         """
         Create a data connector
@@ -392,7 +429,8 @@ class DataHub(object):
         """
         return self._datahub_impl.list_connector(project_name, topic_name)
 
-    def create_connector(self, project_name, topic_name, connector_type, column_fields, config):
+    @type_assert(object, str, str, ConnectorType, list, ConnectorConfig, start_time=int)
+    def create_connector(self, project_name, topic_name, connector_type, column_fields, config, start_time=-1):
         """
         Create a data connector
 
@@ -404,115 +442,174 @@ class DataHub(object):
         :type column_fields: :class:`list`
         :param config: connector config
         :type config: :class:`datahub.models.ConnectorConfig`
-        :return: none
+        :param start_time: start timestamp in milliseconds
+        :type start_time: :class:`int`
+        :return: connector id
+        :rtype: :class:`datahub.models.CreateConnectorResult`
         :raise: :class:`datahub.exceptions.ResourceExistException` if connector is already existed
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if the column field or config is invalid; project_name or topic_name is empty; connector_type or config is wrong type
         """
-        self._datahub_impl.create_connector(project_name, topic_name, connector_type, column_fields, config)
+        return self._datahub_impl.create_connector(project_name, topic_name, connector_type, column_fields, config, start_time)
 
-    def update_connector(self, project_name, topic_name, connector_type, config):
+    @type_assert(object, str, str, (ConnectorType, str), ConnectorConfig)
+    def update_connector(self, project_name, topic_name, connector_id, config):
         """
 
         :param project_name: project name
         :param topic_name: topic name
-        :param connector_type: connector type
-        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param connector_id: connector id, compatible for connector type
+        :type connector_id: :class:`str` or :class:`datahub.models.ConnectorType`
         :param config: connector config
         :type config: :class:`datahub.models.ConnectorConfig`
         :return: none
         """
-        self._datahub_impl.update_connector(project_name, topic_name, connector_type, config)
+        self._datahub_impl.update_connector(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, config)
 
-    def get_connector(self, project_name, topic_name, connector_type):
+    @type_assert(object, str, str, (ConnectorType, str))
+    def get_connector(self, project_name, topic_name, connector_id):
         """
         Get a data connector
 
         :param project_name: project name
         :param topic_name: topic name
-        :param connector_type: connector type
-        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param connector_id: connector id, compatible for connector type
+        :type connector_id: :class:`str` or :class:`datahub.models.ConnectorType`
         :return: data connector info
         :rtype: :class:`datahub.models.GetConnectorResult`
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type or config is wrong type
         """
-        return self._datahub_impl.get_connector(project_name, topic_name, connector_type)
+        return self._datahub_impl.get_connector(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id)
 
-    def delete_connector(self, project_name, topic_name, connector_type):
+    @type_assert(object, str, str, (ConnectorType, str))
+    def delete_connector(self, project_name, topic_name, connector_id):
         """
         Delete a data connector
 
         :param project_name: project name
         :param topic_name: topic name
-        :param connector_type: connector type
-        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param connector_id: connector id, compatible for connector type
+        :type connector_id: :class:`str` or :class:`datahub.models.ConnectorType`
         :return: none
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type is wrong type
         """
-        self._datahub_impl.delete_connector(project_name, topic_name, connector_type)
+        self._datahub_impl.delete_connector(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id)
 
-    def get_connector_shard_status(self, project_name, topic_name, connector_type, shard_id):
+    @type_assert(object, str, str, (ConnectorType, str), str)
+    def get_connector_shard_status(self, project_name, topic_name, connector_id, shard_id=''):
         """
         Get data connector shard status
 
         :param project_name: project name
         :param topic_name: topic name
-        :param connector_type: connector type
-        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param connector_id: connector id, compatible for connector type
+        :type connector_id: :class:`str` or :class:`datahub.models.ConnectorType`
         :param shard_id: shard id
         :return: data connector shard status
         :rtype: :class:`datahub.models.results.GetConnectorShardStatusResult`
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic, shard or connector not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or shard_id is empty; connector_type is wrong type
         """
-        return self._datahub_impl.get_connector_shard_status(project_name, topic_name, connector_type, shard_id)
+        return self._datahub_impl.get_connector_shard_status(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, shard_id)
 
-    def reload_connector(self, project_name, topic_name, connector_type, shard_id=''):
+    @type_assert(object, str, str, (ConnectorType, str), str)
+    def reload_connector(self, project_name, topic_name, connector_id, shard_id=''):
         """
         Reload data connector by given shard id or reload all shards without any shard id given
 
         :param project_name: project name
         :param topic_name: topic name
-        :param connector_type: connector type
+        :param connector_id: connector id, compatible for connector type
+        :type connector_id: :class:`str` or :class:`datahub.models.ConnectorType`
         :param shard_id: shard id
         :return: none
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or filed_name is empty; connector_type is wrong type
         """
-        self._datahub_impl.reload_connector(project_name, topic_name, connector_type, shard_id)
+        self._datahub_impl.reload_connector(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, shard_id)
 
-    def append_connector_field(self, project_name, topic_name, connector_type, field_name):
+    @type_assert(object, str, str, (ConnectorType, str), str)
+    def append_connector_field(self, project_name, topic_name, connector_id, field_name):
         """
         Append field to a connector
 
         :param project_name: project name
         :param topic_name: topic name
-        :param connector_type: connector type
-        :type connector_type: :class:`datahub.models.ConnectorType`
+        :param connector_id: connector id, compatible for connector type
+        :type connector_id: :class:`str` or :class:`datahub.models.ConnectorType`
         :param field_name: field name
         :return: none
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or filed_name is empty; connector_type is wrong type
         """
-        self._datahub_impl.append_connector_field(project_name, topic_name, connector_type, field_name)
+        self._datahub_impl.append_connector_field(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, field_name)
 
+    @type_assert(object, str, str, (ConnectorType, str))
+    def get_connector_done_time(self, project_name, topic_name, connector_id):
+        """
+        Get connector done time
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_id: connector id, compatible for connector type
+        :type connector_id: :class:`str` or :class:`datahub.models.ConnectorType`
+        """
+        return self._datahub_impl.get_connector_done_time(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id)
+
+    @type_assert(object, str, str, (ConnectorType, str), ConnectorState)
+    def update_connector_state(self, project_name, topic_name, connector_id, connector_state):
+        """
+        Update data connector state
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_id: connector id, compatible for connector type
+        :type connector_id: :class:`str` or :class:`datahub.models.ConnectorType`
+        :param connector_state: connector state
+        :type connector_state: :class:`datahub.models.ConnectorState`
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type or connector_state is wrong type
+        """
+        self._datahub_impl.update_connector_state(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, connector_state)
+
+    @type_assert(object, str, str, (ConnectorType, str), str, ConnectorOffset)
+    def update_connector_offset(self, project_name, topic_name, connector_id, shard_id, connector_offset):
+        """
+        Update data connector offset
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param connector_id: connector id, compatible for connector type
+        :type connector_id: :class:`str` or :class:`datahub.models.ConnectorType`
+        :param shard_id: shard id
+        :param connector_offset: current sequence
+        :type connector_offset: :class:`datahub.models.ConnectorOffset`
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type or connector_state is wrong type
+        """
+        self._datahub_impl.update_connector_offset(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, shard_id, connector_offset)
+
+    @type_assert(object, str, str, str)
     def init_and_get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids):
         """
-        Init and get subscription offset
+        Open subscription offset session
 
         :param project_name: project name
         :param topic_name: topic name
         :param sub_id: subscription id
         :param shard_ids: shard ids
         :return: offset info
-        :rtype :class:`datahub.models.InitAndGetSubscriptionOffset`
+        :rtype :class:`datahub.models.InitAndGetSubscriptionOffsetResult`
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name, sub_id or shard_id is empty
         """
         return self._datahub_impl.init_and_get_subscription_offset(project_name, topic_name, sub_id, shard_ids)
 
+    @type_assert(object, str, str, str)
     def get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids=None):
         """
         Get subscription offset
@@ -521,7 +618,6 @@ class DataHub(object):
         :param topic_name: topic name
         :param sub_id: subscription id
         :param shard_ids: shard ids
-        :type shard_ids: :class:`list`
         :return: offset info
         :rtype: :class:`datahub.models.results.GetSubscriptionOffsetResult`
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
@@ -529,6 +625,7 @@ class DataHub(object):
         """
         return self._datahub_impl.get_subscription_offset(project_name, topic_name, sub_id, shard_ids)
 
+    @type_assert(object, str, str, str, dict)
     def update_subscription_offset(self, project_name, topic_name, sub_id, offsets):
         """
         Update subscription offset
@@ -545,54 +642,7 @@ class DataHub(object):
         """
         self._datahub_impl.update_subscription_offset(project_name, topic_name, sub_id, offsets)
 
-    def get_connector_done_time(self, project_name, topic_name, connector_type):
-        """
-        Get connector done time
-
-        :param project_name: project name
-        :param topic_name: topic name
-        :param connector_type: connector type
-        :type connector_type: :class:`datahub.models.ConnectorType`
-        """
-        return self._datahub_impl.get_connector_done_time(project_name, topic_name, connector_type)
-
-    # =======================================================
-    # internal api
-    # =======================================================
-
-    def update_connector_state(self, project_name, topic_name, connector_type, connector_state):
-        """
-        Update data connector state
-
-        :param project_name: project name
-        :param topic_name: topic name
-        :param connector_type: connector type
-        :type connector_type: :class:`datahub.models.ConnectorType`
-        :param connector_state: connector state
-        :type connector_state: :class:`datahub.models.ConnectorState`
-        :return: none
-        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
-        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type or connector_state is wrong type
-        """
-        self._datahub_impl.update_connector_state(project_name, topic_name, connector_type, connector_state)
-
-    def update_connector_offset(self, project_name, topic_name, connector_type, shard_id, connector_offset):
-        """
-        Update data connector offset
-
-        :param project_name: project name
-        :param topic_name: topic name
-        :param connector_type: connector type
-        :type connector_type: :class:`datahub.models.ConnectorType`
-        :param shard_id: shard id
-        :param connector_offset: current sequence
-        :type connector_offset: :class:`datahub.models.ConnectorOffset`
-        :return: none
-        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
-        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type or connector_state is wrong type
-        """
-        self._datahub_impl.update_connector_offset(project_name, topic_name, connector_type, shard_id, connector_offset)
-
+    @type_assert(object, str, str, str)
     def create_subscription(self, project_name, topic_name, comment):
         """
         Create subscription to a topic
@@ -608,6 +658,7 @@ class DataHub(object):
         """
         return self._datahub_impl.create_subscription(project_name, topic_name, comment)
 
+    @type_assert(object, str, str, str)
     def delete_subscription(self, project_name, topic_name, sub_id):
         """
         Delete subscription by subscription id
@@ -621,6 +672,7 @@ class DataHub(object):
         """
         self._datahub_impl.delete_subscription(project_name, topic_name, sub_id)
 
+    @type_assert(object, str, str, str)
     def get_subscription(self, project_name, topic_name, sub_id):
         """
         Get subscription
@@ -635,6 +687,7 @@ class DataHub(object):
         """
         return self._datahub_impl.get_subscription(project_name, topic_name, sub_id)
 
+    @type_assert(object, str, str, str, str)
     def update_subscription(self, project_name, topic_name, sub_id, comment):
         """
         Update subscription
@@ -649,6 +702,7 @@ class DataHub(object):
         """
         self._datahub_impl.update_subscription(project_name, topic_name, sub_id, comment)
 
+    @type_assert(object, str, str, str, SubscriptionState)
     def update_subscription_state(self, project_name, topic_name, sub_id, state):
         """
         Update subscription state
@@ -657,12 +711,14 @@ class DataHub(object):
         :param topic_name: topic name
         :param sub_id: subscription id
         :param state: new state
+        :type state: :class:`datahub.models.SubscriptionState`
         :return: none
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty; state is wrong type
         """
         self._datahub_impl.update_subscription_state(project_name, topic_name, sub_id, state)
 
+    @type_assert(object, str, str, str, int, int)
     def list_subscription(self, project_name, topic_name, query_key, page_index, page_size):
         """
         Query subscription in range [start, end)
@@ -682,6 +738,7 @@ class DataHub(object):
         """
         return self._datahub_impl.list_subscription(project_name, topic_name, query_key, page_index, page_size)
 
+    @type_assert(object, str, str, str, dict)
     def reset_subscription_offset(self, project_name, topic_name, sub_id, offsets):
         """
         Update subscription offset

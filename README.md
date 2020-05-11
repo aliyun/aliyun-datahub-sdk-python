@@ -55,7 +55,8 @@ Tested on Python 2.7, 3.3, 3.4, 3.5, 3.6 and pypy, Python 3.6 recommended
  * enum34 (>=1.1.5 for python_version < '3.4')
  * crcmod (>=1.7)
  * lz4 (>=2.0.0)
- * cprotobuf (>=0.1.9)
+ * cprotobuf (==0.1.9)
+ * funcsigs (>=1.0.2)
 
 ## Run Tests
 
@@ -109,7 +110,7 @@ topic_name='blob_topic_test'
 shard_count = 3
 life_cycle = 7
 comment = 'blob topic'
-dh.create_blob_topic(project_name, topic_name, shard_count, life_cycle, comment)
+dh.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, comment)
 
 # ============================= get topic =============================
 
@@ -198,8 +199,8 @@ see more examples in [examples](https://github.com/aliyun/aliyun-datahub-sdk-pyt
 Update [changelog](https://github.com/aliyun/aliyun-datahub-sdk-python/tree/master/changelog.rst), then use [bumpversion](https://github.com/peritus/bumpversion) to update version:
 
 1. bugfix: `bumpversion patch`
-2. small feature：`bumpversion minor`
-3. breaking change：`bumpversion major`
+2. small feature: `bumpversion minor`
+3. breaking change: `bumpversion major`
 
 ## Contributing
 

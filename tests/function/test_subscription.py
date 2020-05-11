@@ -77,7 +77,7 @@ def clean_subscription(datahub_client, project_name, topic_name):
 class TestSubscription:
 
     def test_create_and_delete_subscription(self):
-        project_name = "topic_test_p%d_0" % int(time.time())
+        project_name = "subscription_test_p"
         topic_name = "topic_test_t%d_0" % int(time.time())
 
         shard_count = 3
@@ -110,7 +110,7 @@ class TestSubscription:
             dh.delete_project(project_name)
 
     def test_get_subscription(self):
-        project_name = "topic_test_p%d_1" % int(time.time())
+        project_name = "subscription_test_p"
         topic_name = "topic_test_t%d_1" % int(time.time())
 
         shard_count = 3
@@ -152,7 +152,7 @@ class TestSubscription:
             dh.delete_project(project_name)
 
     def test_update_subscription(self):
-        project_name = "topic_test_p%d_2" % int(time.time())
+        project_name = "subscription_test_p"
         topic_name = "topic_test_t%d_2" % int(time.time())
 
         shard_count = 3
@@ -190,7 +190,7 @@ class TestSubscription:
             dh.delete_project(project_name)
 
     def test_update_subscription_state(self):
-        project_name = "topic_test_p%d_3" % int(time.time())
+        project_name = "subscription_test_p"
         topic_name = "topic_test_t%d_3" % int(time.time())
 
         shard_count = 3
@@ -231,7 +231,7 @@ class TestSubscription:
             dh.delete_project(project_name)
 
     def test_list_subscription(self):
-        project_name = "topic_test_p%d_4" % int(time.time())
+        project_name = "subscription_test_p"
         topic_name = "topic_test_t%d_4" % int(time.time())
 
         shard_count = 3

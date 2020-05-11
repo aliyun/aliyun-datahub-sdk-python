@@ -16,42 +16,19 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
 import json
-import os
+import sys
 
-from httmock import HTTMock, urlmatch, response
+sys.path.append('./')
+from httmock import HTTMock
 
 from datahub import DataHub
 from datahub.exceptions import ResourceNotFoundException, InvalidOperationException, InvalidParameterException, \
     LimitExceededException, DatahubException
 from datahub.models import ShardState
-
-_TESTS_PATH = os.path.abspath(os.path.dirname(__file__))
-_FIXTURE_PATH = os.path.join(_TESTS_PATH, '../fixtures')
+from .unittest_util import gen_mock_api
 
 dh = DataHub('access_id', 'access_key', 'http://endpoint')
-
-
-@urlmatch(netloc=r'(.*\.)?endpoint')
-def datahub_api_mock(url, request):
-    path = url.path.replace('/', '.')[1:]
-    res_file = os.path.join(_FIXTURE_PATH, '%s.json' % path)
-    status_code = 200
-    content = {
-    }
-    headers = {
-        'Content-Type': 'application/json',
-        'x-datahub-request-id': 0
-    }
-    try:
-        with open(res_file, 'rb') as f:
-            content = json.loads(f.read().decode('utf-8'))
-            if 'ErrorCode' in content:
-                status_code = 500
-    except (IOError, ValueError) as e:
-        content['ErrorMessage'] = 'Loads fixture %s failed, error: %s' % (res_file, e)
-    return response(status_code, content, headers, request=request)
 
 
 class TestShard:
@@ -59,14 +36,23 @@ class TestShard:
     def test_wait_shards_ready_success(self):
         project_name = 'wait'
         topic_name = 'ready'
-        with HTTMock(datahub_api_mock):
+
+        def check(request):
+            assert request.method == 'GET'
+            assert request.url == 'http://endpoint/projects/wait/topics/ready/shards'
+
+        with HTTMock(gen_mock_api(check)):
             dh.wait_shards_ready(project_name, topic_name)
 
     def test_wait_shards_ready_timeout(self):
         project_name = 'wait'
         topic_name = 'unready'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'GET'
+                assert request.url == 'http://endpoint/projects/wait/topics/unready/shards'
+
+            with HTTMock(gen_mock_api(check)):
                 dh.wait_shards_ready(project_name, topic_name, 1)
         except DatahubException:
             pass
@@ -107,7 +93,11 @@ class TestShard:
         project_name = 'unexisted'
         topic_name = 'valid'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'GET'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid/shards'
+
+            with HTTMock(gen_mock_api(check)):
                 dh.wait_shards_ready(project_name, topic_name)
         except ResourceNotFoundException:
             pass
@@ -118,7 +108,11 @@ class TestShard:
         project_name = 'valid'
         topic_name = 'unexisted'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'GET'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted/shards'
+
+            with HTTMock(gen_mock_api(check)):
                 dh.wait_shards_ready(project_name, topic_name)
         except ResourceNotFoundException:
             pass
@@ -128,7 +122,12 @@ class TestShard:
     def test_list_shard_success(self):
         project_name = 'success'
         topic_name = 'success'
-        with HTTMock(datahub_api_mock):
+
+        def check(request):
+            assert request.method == 'GET'
+            assert request.url == 'http://endpoint/projects/success/topics/success/shards'
+
+        with HTTMock(gen_mock_api(check)):
             result = dh.list_shard(project_name, topic_name)
         print(result)
         shard_list = result.shards
@@ -173,7 +172,11 @@ class TestShard:
         topic_name = 'valid'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'GET'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid/shards'
+
+            with HTTMock(gen_mock_api(check)):
                 dh.list_shard(project_name, topic_name)
         except ResourceNotFoundException:
             pass
@@ -185,7 +188,11 @@ class TestShard:
         topic_name = 'unexisted'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'GET'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted/shards'
+
+            with HTTMock(gen_mock_api(check)):
                 dh.list_shard(project_name, topic_name)
         except ResourceNotFoundException:
             pass
@@ -198,7 +205,15 @@ class TestShard:
         shard_id = '0'
         split_key = '16666666666666666666666666666666'
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/split/topics/success/shards'
+            content = json.loads(request.body)
+            assert content['Action'] == 'split'
+            assert content['SplitKey'] == "16666666666666666666666666666666"
+            assert content['ShardId'] == '0'
+
+        with HTTMock(gen_mock_api(check)):
             split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
 
         new_shards = split_result.new_shards
@@ -216,7 +231,18 @@ class TestShard:
         topic_name = 'default'
         shard_id = '0'
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.url == 'http://endpoint/projects/split/topics/default/shards'
+            if request.method == 'GET':
+                pass # list shard
+            else:
+                assert request.method == 'POST'
+                content = json.loads(request.body)
+                assert content['Action'] == 'split'
+                assert content['SplitKey'] == "2aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                assert content['ShardId'] == '0'
+
+        with HTTMock(gen_mock_api(check)):
             split_result = dh.split_shard(project_name, topic_name, shard_id)
 
     def test_split_shard_with_invalid_state(self):
@@ -226,7 +252,15 @@ class TestShard:
         split_key = '16666666666666666666666666666666'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/split/topics/invalid_state/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'split'
+                assert content['SplitKey'] == "16666666666666666666666666666666"
+                assert content['ShardId'] == '0'
+
+            with HTTMock(gen_mock_api(check)):
                 split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
         except InvalidOperationException:
             pass
@@ -240,7 +274,15 @@ class TestShard:
         split_key = '1'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/split/topics/limit_exceeded/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'split'
+                assert content['SplitKey'] == "1"
+                assert content['ShardId'] == '0'
+
+            with HTTMock(gen_mock_api(check)):
                 split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
         except LimitExceededException:
             pass
@@ -254,7 +296,15 @@ class TestShard:
         split_key = '16666666666666666666666666666666'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/split/topics/invalid_key/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'split'
+                assert content['SplitKey'] == "16666666666666666666666666666666"
+                assert content['ShardId'] == '0'
+
+            with HTTMock(gen_mock_api(check)):
                 split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
         except InvalidParameterException:
             pass
@@ -307,7 +357,11 @@ class TestShard:
         split_key = '16666666666666666666666666666666'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid/shards'
+
+            with HTTMock(gen_mock_api(check)):
                 split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
         except ResourceNotFoundException:
             pass
@@ -321,7 +375,11 @@ class TestShard:
         split_key = '16666666666666666666666666666666'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted/shards'
+
+            with HTTMock(gen_mock_api(check)):
                 split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
         except ResourceNotFoundException:
             pass
@@ -335,7 +393,15 @@ class TestShard:
         split_key = '16666666666666666666666666666666'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/valid/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'split'
+                assert content['SplitKey'] == "16666666666666666666666666666666"
+                assert content['ShardId'] == '99'
+
+            with HTTMock(gen_mock_api(check)):
                 split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
         except ResourceNotFoundException:
             pass
@@ -348,7 +414,15 @@ class TestShard:
         shard_id = '0'
         adj_shard_id = '1'
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/merge/topics/success/shards'
+            content = json.loads(request.body)
+            assert content['Action'] == 'merge'
+            assert content['AdjacentShardId'] == "1"
+            assert content['ShardId'] == '0'
+
+        with HTTMock(gen_mock_api(check)):
             merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
 
         assert merge_result.shard_id == '2'
@@ -362,7 +436,15 @@ class TestShard:
         adj_shard_id = '1'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/merge/topics/invalid_state/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'merge'
+                assert content['AdjacentShardId'] == "1"
+                assert content['ShardId'] == '0'
+
+            with HTTMock(gen_mock_api(check)):
                 merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
         except InvalidOperationException:
             pass
@@ -376,7 +458,15 @@ class TestShard:
         adj_shard_id = '1'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/merge/topics/limit_exceeded/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'merge'
+                assert content['AdjacentShardId'] == "1"
+                assert content['ShardId'] == '0'
+
+            with HTTMock(gen_mock_api(check)):
                 merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
         except LimitExceededException:
             pass
@@ -390,7 +480,15 @@ class TestShard:
         adj_shard_id = '2'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/merge/topics/shards_not_adjacent/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'merge'
+                assert content['AdjacentShardId'] == "2"
+                assert content['ShardId'] == '0'
+
+            with HTTMock(gen_mock_api(check)):
                 merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
         except InvalidParameterException:
             pass
@@ -456,7 +554,15 @@ class TestShard:
         adj_shard_id = '1'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'merge'
+                assert content['AdjacentShardId'] == "1"
+                assert content['ShardId'] == '0'
+
+            with HTTMock(gen_mock_api(check)):
                 merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
         except ResourceNotFoundException:
             pass
@@ -470,7 +576,15 @@ class TestShard:
         adj_shard_id = '1'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'merge'
+                assert content['AdjacentShardId'] == "1"
+                assert content['ShardId'] == '0'
+
+            with HTTMock(gen_mock_api(check)):
                 merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
         except ResourceNotFoundException:
             pass
@@ -484,7 +598,15 @@ class TestShard:
         adj_shard_id = '1'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/valid/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'merge'
+                assert content['AdjacentShardId'] == "1"
+                assert content['ShardId'] == '99'
+
+            with HTTMock(gen_mock_api(check)):
                 merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
         except ResourceNotFoundException:
             pass
@@ -498,7 +620,15 @@ class TestShard:
         adj_shard_id = '99'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/valid/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'merge'
+                assert content['AdjacentShardId'] == "99"
+                assert content['ShardId'] == '0'
+
+            with HTTMock(gen_mock_api(check)):
                 merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
         except ResourceNotFoundException:
             pass

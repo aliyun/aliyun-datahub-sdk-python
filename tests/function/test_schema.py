@@ -77,7 +77,7 @@ def clean_subscription(datahub_client, project_name, topic_name):
 class TestSchema:
 
     def test_schema(self):
-        project_name_0 = "topic_test_p%d_0" % int(time.time())
+        project_name = "topic_test_p"
         topic_name_0 = "topic_test_t%d_0" % int(time.time())
         topic_name_1 = "topic_test_t%d_1" % int(time.time())
 
@@ -98,17 +98,17 @@ class TestSchema:
         print(RecordSchema())
 
         try:
-            dh.create_project(project_name_0, '')
+            dh.create_project(project_name, '')
         except ResourceExistException:
             pass
 
         # make sure project wil be deleted
         try:
             try:
-                dh.create_tuple_topic(project_name_0, topic_name_0, shard_count, life_cycle, record_schema_0, '')
+                dh.create_tuple_topic(project_name, topic_name_0, shard_count, life_cycle, record_schema_0, '')
             except ResourceExistException:
                 pass
-            result = dh.get_topic(project_name_0, topic_name_0)
+            result = dh.get_topic(project_name, topic_name_0)
             print(result)
             for index, field in enumerate(result.record_schema.field_list):
                 assert field.name == record_schema_0.field_list[index].name
@@ -116,18 +116,18 @@ class TestSchema:
                 assert field.allow_null == record_schema_0.field_list[index].allow_null
 
             try:
-                dh.create_tuple_topic(project_name_0, topic_name_1, shard_count, life_cycle, record_schema_1, '')
+                dh.create_tuple_topic(project_name, topic_name_1, shard_count, life_cycle, record_schema_1, '')
             except ResourceExistException:
                 pass
-            result = dh.get_topic(project_name_0, topic_name_1)
+            result = dh.get_topic(project_name, topic_name_1)
             print(result)
             for index, field in enumerate(result.record_schema.field_list):
                 assert field.name == record_schema_1.field_list[index].name
                 assert field.type == record_schema_1.field_list[index].type
                 assert field.allow_null == record_schema_1.field_list[index].allow_null
         finally:
-            clean_topic(dh, project_name_0)
-            dh.delete_project(project_name_0)
+            clean_topic(dh, project_name)
+            dh.delete_project(project_name)
 
 
 # run directly

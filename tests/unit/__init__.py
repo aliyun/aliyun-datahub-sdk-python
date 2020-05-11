@@ -17,8 +17,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-""" version
-"""
+from __future__ import absolute_import
 
-__version__ = '2.15.0'
-__datahub_client_version__ = '1.1'
+from .unittest_util import *

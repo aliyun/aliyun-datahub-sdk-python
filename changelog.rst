@@ -1,6 +1,36 @@
 Changelog
 ================
 
+Version 2.15.2
+-----------------
+
++ fix bool cast
+
+Version 2.15.1
+-----------------
+
++ remove string length check
+
+Version 2.15.0
+-----------------
+
++ add update project api
++ validate param type
++ list_connector will return connector_ids
++ create_connector will return connector_id
++ param connector_type change to connector_id
++ deprecated shard_contexts in GetConnectorResult
++ deprecated ConnectorState `CONNECTOR_CREATED`, `CONNECTOR_PAUSED`, add `CONNECTOR_STOPPED`
++ member variable in GetConnectorShardStatusResult is changed, not compatible
++ remove max_commit_size in DatabaseConnectorConfig,EsConnectorConfig, not compatible
++ remove invocation_role,batch_size,start_position,start_timestamp in FcConnectorConfig, not compatible
++ add start_time in CreateConnectorParams
+
+Version 2.12.7
+-----------------
+
++ specify cprotobuf version to 0.1.9
+
 Version 2.12.6
 -----------------
 

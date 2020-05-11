@@ -77,93 +77,89 @@ def clean_subscription(datahub_client, project_name, topic_name):
 class TestShard:
 
     def test_list_shard(self):
-        project_name_0 = 'shard_test_p%d_0' % int(time.time())
+        project_name = "shard_test_p"
         topic_name_0 = 'shard_test_t%d_0' % int(time.time())
         record_schema = RecordSchema.from_lists(
             ['bigint_field', 'string_field', 'double_field', 'bool_field', 'event_time1'],
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
         try:
-            dh.create_project(project_name_0, '')
+            dh.create_project(project_name, '')
         except ResourceExistException:
             pass
 
         # make sure project wil be deleted
         try:
             try:
-                dh.create_tuple_topic(project_name_0, topic_name_0, 3, 7, record_schema, '1')
+                dh.create_tuple_topic(project_name, topic_name_0, 3, 7, record_schema, '1')
             except ResourceExistException:
                 pass
             # ======================= list shard =======================
-            shard_results = dh.list_shard(project_name_0, topic_name_0)
+            shard_results = dh.list_shard(project_name, topic_name_0)
             print(shard_results)
             assert len(shard_results.shards) == 3
             assert shard_results.shards[0].left_shard_id != ''
             assert shard_results.shards[0].right_shard_id != ''
         finally:
-            clean_topic(dh, project_name_0)
-            dh.delete_project(project_name_0)
+            clean_topic(dh, project_name)
+            dh.delete_project(project_name)
 
     def test_split_merge_shard(self):
-        project_name_1 = 'shard_test_p%d_1' % int(time.time())
+        project_name = "shard_test_p"
         topic_name_1 = 'shard_test_t%d_1' % int(time.time())
         record_schema = RecordSchema.from_lists(
             ['bigint_field', 'string_field', 'double_field', 'bool_field', 'event_time1'],
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
         try:
-            dh.create_project(project_name_1, '')
+            dh.create_project(project_name, '')
         except ResourceExistException:
             pass
 
         # make sure project wil be deleted
         try:
             try:
-                dh.create_tuple_topic(project_name_1, topic_name_1, 1, 7, record_schema, '1')
+                dh.create_tuple_topic(project_name, topic_name_1, 1, 7, record_schema, '1')
             except ResourceExistException:
                 pass
 
             time.sleep(5)
             # ======================= split shard =======================
-            new_shards = dh.split_shard(project_name_1, topic_name_1, '0',
+            new_shards = dh.split_shard(project_name, topic_name_1, '0',
                                         '66666666666666666666666666666666').new_shards
             assert new_shards[0].shard_id == '1'
             assert new_shards[1].shard_id == '2'
             assert new_shards[0].end_hash_key == '66666666666666666666666666666666'
             assert new_shards[1].begin_hash_key == '66666666666666666666666666666666'
 
-            dh.wait_shards_ready(project_name_1, topic_name_1)
-            shard_list = dh.list_shard(project_name_1, topic_name_1).shards
+            dh.wait_shards_ready(project_name, topic_name_1)
+            shard_list = dh.list_shard(project_name, topic_name_1).shards
             print(shard_list)
 
-            assert shard_list[0].shard_id == '0'
-            assert shard_list[0].state == ShardState.CLOSED
-            assert shard_list[1].shard_id == '1'
-            assert shard_list[1].state == ShardState.ACTIVE
-            assert shard_list[2].shard_id == '2'
-            assert shard_list[2].state == ShardState.ACTIVE
+            for shard in shard_list:
+                if shard.shard_id == '0':
+                    assert shard.state == ShardState.CLOSED
+                else:
+                    assert shard.state == ShardState.ACTIVE
 
             time.sleep(5)
             # ======================= merge shard =======================
-            merge_result = dh.merge_shard(project_name_1, topic_name_1, '1', '2')
+            merge_result = dh.merge_shard(project_name, topic_name_1, '1', '2')
             print(merge_result)
             assert merge_result.shard_id == '3'
 
-            dh.wait_shards_ready(project_name_1, topic_name_1)
-            shard_list = dh.list_shard(project_name_1, topic_name_1).shards
+            dh.wait_shards_ready(project_name, topic_name_1)
+            shard_list = dh.list_shard(project_name, topic_name_1).shards
             print(shard_list)
 
-            assert shard_list[0].shard_id == '0'
-            assert shard_list[0].state == ShardState.CLOSED
-            assert shard_list[1].shard_id == '1'
-            assert shard_list[1].state == ShardState.CLOSED
-            assert shard_list[2].shard_id == '2'
-            assert shard_list[2].state == ShardState.CLOSED
-            assert shard_list[3].shard_id == '3'
-            assert shard_list[3].state == ShardState.ACTIVE
+            for shard in shard_list:
+                if shard.shard_id in ('0', '1', '2'):
+                    assert shard.state == ShardState.CLOSED
+                else:
+                    assert shard.state == ShardState.ACTIVE
         finally:
-            clean_topic(dh, project_name_1)
-            dh.delete_project(project_name_1)
+            clean_topic(dh, project_name)
+            dh.delete_project(project_name)
 
 
 # run directly

@@ -312,7 +312,7 @@ class RestClient(object):
             except Exception:
                 logger.error('Decode json message error, content: %s' % to_text(content))
                 raise DatahubException('Decode json message error, content: %s' % to_text(content),
-                                       status_code, request_id, '',)
+                                       status_code, request_id, '')
 
             logger.error("status_code: %d, request_id: %s, error_code: %s, error_msg: %s"
                          % (status_code, request_id, error_code, error_msg))

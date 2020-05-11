@@ -73,6 +73,15 @@ class InvalidOperationException(DatahubException):
         super(InvalidOperationException, self).__init__(error_msg, status_code, request_id, error_code)
 
 
+class OffsetResetException(InvalidOperationException):
+    """
+    The offset is reset.
+    """
+
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
+        super(OffsetResetException, self).__init__(error_msg, status_code, request_id, error_code)
+
+
 class LimitExceededException(DatahubException):
     """
     Too many request.
@@ -122,6 +131,7 @@ class ExceptionHandler(object):
         'NoSuchProject': ResourceNotFoundException,
         'NoSuchTopic': ResourceNotFoundException,
         'NoSuchShard': ResourceNotFoundException,
+        'NoSuchConnector': ResourceNotFoundException,
         'ProjectAlreadyExist': ResourceExistException,
         'TopicAlreadyExist': ResourceExistException,
         'ConnectorAlreadyExist': ResourceExistException,
@@ -134,7 +144,7 @@ class ExceptionHandler(object):
         'Unauthorized': AuthorizationFailedException,
         'NoPermission': NoPermissionException,
         'SubscriptionOffline': InvalidOperationException,
-        'OffsetReseted': InvalidOperationException,
+        'OffsetReseted': OffsetResetException,
         'OffsetSessionClosed': InvalidOperationException,
         'OffsetSessionChanged': InvalidOperationException,
         'ListSubscriptionOutofRange': InvalidParameterException,

@@ -18,39 +18,17 @@
 # under the License.
 
 import json
-import os
+import sys
 
-from httmock import HTTMock, urlmatch, response
+sys.path.append('./')
+from httmock import HTTMock
 
 from datahub import DataHub
 from datahub.exceptions import ResourceNotFoundException, InvalidParameterException
 from datahub.models import CursorType
-
-_TESTS_PATH = os.path.abspath(os.path.dirname(__file__))
-_FIXTURE_PATH = os.path.join(_TESTS_PATH, '../fixtures')
+from .unittest_util import gen_mock_api
 
 dh = DataHub('access_id', 'access_key', 'http://endpoint')
-
-
-@urlmatch(netloc=r'(.*\.)?endpoint')
-def datahub_api_mock(url, request):
-    path = url.path.replace('/', '.')[1:]
-    res_file = os.path.join(_FIXTURE_PATH, '%s.json' % path)
-    status_code = 200
-    content = {
-    }
-    headers = {
-        'Content-Type': 'application/json',
-        'x-datahub-request-id': 0
-    }
-    try:
-        with open(res_file, 'rb') as f:
-            content = json.loads(f.read().decode('utf-8'))
-            if 'ErrorCode' in content:
-                status_code = 500
-    except (IOError, ValueError) as e:
-        content['ErrorMessage'] = 'Loads fixture %s failed, error: %s' % (res_file, e)
-    return response(status_code, content, headers, request=request)
 
 
 class TestCursor:
@@ -59,10 +37,47 @@ class TestCursor:
         project_name = 'cursor'
         topic_name = 'success'
         shard_id = '0'
-        with HTTMock(datahub_api_mock):
+
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/cursor/topics/success/shards/0'
+            content = json.loads(request.body)
+            assert content['Action'] == 'cursor'
+            assert content['Type'] == 'OLDEST'
+
+        with HTTMock(gen_mock_api(check)):
             cursor_oldest = dh.get_cursor(project_name, topic_name, shard_id, CursorType.OLDEST)
+
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/cursor/topics/success/shards/0'
+            content = json.loads(request.body)
+            assert content['Action'] == 'cursor'
+            assert content['Type'] == 'LATEST'
+
+        with HTTMock(gen_mock_api(check)):
             cursor_latest = dh.get_cursor(project_name, topic_name, shard_id, CursorType.LATEST)
+
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/cursor/topics/success/shards/0'
+            content = json.loads(request.body)
+            assert content['Action'] == 'cursor'
+            assert content['Type'] == 'SEQUENCE'
+            assert content['Sequence'] == 0
+
+        with HTTMock(gen_mock_api(check)):
             cursor_sequence = dh.get_cursor(project_name, topic_name, shard_id, CursorType.SEQUENCE, 0)
+
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/cursor/topics/success/shards/0'
+            content = json.loads(request.body)
+            assert content['Action'] == 'cursor'
+            assert content['Type'] == 'SYSTEM_TIME'
+            assert content['SystemTime'] == 0
+
+        with HTTMock(gen_mock_api(check)):
             cursor_system_time = dh.get_cursor(project_name, topic_name, shard_id, CursorType.SYSTEM_TIME, 0)
 
         assert cursor_oldest.cursor == '20000000000000000000000000000000'
@@ -87,7 +102,15 @@ class TestCursor:
         shard_id = '0'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/cursor/topics/invalid_param/shards/0'
+                content = json.loads(request.body)
+                assert content['Action'] == 'cursor'
+                assert content['Type'] == 'SYSTEM_TIME'
+                assert content['SystemTime'] == 999999999
+
+            with HTTMock(gen_mock_api(check)):
                 cursor_system_time = dh.get_cursor(project_name, topic_name, shard_id, CursorType.SYSTEM_TIME,
                                                    999999999)
         except InvalidParameterException:
@@ -149,7 +172,15 @@ class TestCursor:
         shard_id = '0'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid/shards/0'
+                content = json.loads(request.body)
+                assert content['Action'] == 'cursor'
+                assert content['Type'] == 'SYSTEM_TIME'
+                assert content['SystemTime'] == 0
+
+            with HTTMock(gen_mock_api(check)):
                 cursor_system_time = dh.get_cursor(project_name, topic_name, shard_id, CursorType.SYSTEM_TIME, 0)
         except ResourceNotFoundException:
             pass
@@ -162,7 +193,15 @@ class TestCursor:
         shard_id = '0'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted/shards/0'
+                content = json.loads(request.body)
+                assert content['Action'] == 'cursor'
+                assert content['Type'] == 'SYSTEM_TIME'
+                assert content['SystemTime'] == 0
+
+            with HTTMock(gen_mock_api(check)):
                 cursor_system_time = dh.get_cursor(project_name, topic_name, shard_id, CursorType.SYSTEM_TIME, 0)
         except ResourceNotFoundException:
             pass
@@ -175,7 +214,15 @@ class TestCursor:
         shard_id = '0'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/valid/shards/0'
+                content = json.loads(request.body)
+                assert content['Action'] == 'cursor'
+                assert content['Type'] == 'SYSTEM_TIME'
+                assert content['SystemTime'] == 0
+
+            with HTTMock(gen_mock_api(check)):
                 cursor_system_time = dh.get_cursor(project_name, topic_name, shard_id, CursorType.SYSTEM_TIME, 0)
         except ResourceNotFoundException:
             pass

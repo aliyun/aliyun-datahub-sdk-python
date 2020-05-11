@@ -25,7 +25,8 @@ import time
 from six.moves import configparser
 
 from datahub import DataHub
-from datahub.exceptions import ResourceExistException, ResourceNotFoundException, InvalidOperationException
+from datahub.exceptions import ResourceExistException, ResourceNotFoundException, InvalidOperationException, \
+    LimitExceededException
 from datahub.models import RecordType, RecordSchema, FieldType
 
 current_path = os.path.split(os.path.realpath(__file__))[0]
@@ -78,7 +79,7 @@ def clean_subscription(datahub_client, project_name, topic_name):
 class TestTopic:
 
     def test_list_topic(self):
-        project_name_0 = "topic_test_p%d_0" % int(time.time())
+        project_name = "topic_test_t"
         topic_name_0 = "topic_test_t%d_0" % int(time.time())
 
         shard_count = 3
@@ -88,27 +89,27 @@ class TestTopic:
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
         try:
-            dh.create_project(project_name_0, '')
+            dh.create_project(project_name, '')
         except ResourceExistException:
             pass
 
         # make sure project wil be deleted
         try:
             try:
-                dh.create_tuple_topic(project_name_0, topic_name_0, shard_count, life_cycle, record_schema, '')
+                dh.create_tuple_topic(project_name, topic_name_0, shard_count, life_cycle, record_schema, '')
             except ResourceExistException:
                 pass
 
             # ======================= list topic =======================
-            result = dh.list_topic(project_name_0)
+            result = dh.list_topic(project_name)
             print(result)
             assert topic_name_0 in result.topic_names
         finally:
-            clean_topic(dh, project_name_0)
-            dh.delete_project(project_name_0)
+            clean_topic(dh, project_name)
+            dh.delete_project(project_name)
 
     def test_create_and_delete_topic(self):
-        project_name_1 = "topic_test_p%d_1" % int(time.time())
+        project_name = "topic_test_t"
         topic_name_1 = "topic_test_t%d_1" % int(time.time())
         topic_name_2 = "topic_test_t%d_2" % int(time.time())
 
@@ -118,7 +119,7 @@ class TestTopic:
              FieldType.DECIMAL])
 
         try:
-            dh.create_project(project_name_1, '')
+            dh.create_project(project_name, '')
         except ResourceExistException:
             pass
 
@@ -126,21 +127,21 @@ class TestTopic:
         try:
             # ======================= create topic =======================
             try:
-                dh.create_tuple_topic(project_name_1, topic_name_1, 3, 7, record_schema, '1')
+                dh.create_tuple_topic(project_name, topic_name_1, 3, 7, record_schema, '1')
             except ResourceExistException:
                 pass
 
             try:
-                dh.create_blob_topic(project_name_1, topic_name_2, 3, 7, '2')
+                dh.create_blob_topic(project_name, topic_name_2, 3, 7, '2')
             except ResourceExistException:
                 pass
         finally:
             # ======================= delete topic =======================
-            clean_topic(dh, project_name_1)
-            dh.delete_project(project_name_1)
+            clean_topic(dh, project_name)
+            dh.delete_project(project_name)
 
     def test_get_exist_topic(self):
-        project_name_2 = "topic_test_p%d_3" % int(time.time())
+        project_name = "topic_test_t"
         topic_name_1 = "topic_test_t%d_1" % int(time.time())
         topic_name_2 = "topic_test_t%d_2" % int(time.time())
         record_schema = RecordSchema.from_lists(
@@ -149,26 +150,26 @@ class TestTopic:
              FieldType.DECIMAL])
 
         try:
-            dh.create_project(project_name_2, '')
+            dh.create_project(project_name, '')
         except ResourceExistException:
             pass
 
         # make sure project wil be deleted
         try:
             try:
-                dh.create_tuple_topic(project_name_2, topic_name_1, 3, 7, record_schema, '1')
+                dh.create_tuple_topic(project_name, topic_name_1, 3, 7, record_schema, '1')
             except ResourceExistException:
                 pass
 
             try:
-                dh.create_blob_topic(project_name_2, topic_name_2, 3, 7, '2')
+                dh.create_blob_topic(project_name, topic_name_2, 3, 7, '2')
             except ResourceExistException:
                 pass
 
             # ======================= get topic =======================
-            topic_result_1 = dh.get_topic(project_name_2, topic_name_1)
+            topic_result_1 = dh.get_topic(project_name, topic_name_1)
             print(topic_result_1)
-            assert topic_result_1.project_name == project_name_2
+            assert topic_result_1.project_name == project_name
             assert topic_result_1.topic_name == topic_name_1
             assert topic_result_1.comment == '1'
             assert topic_result_1.life_cycle == 7
@@ -179,28 +180,28 @@ class TestTopic:
                 assert field.allow_null == record_schema.field_list[index].allow_null
             assert topic_result_1.shard_count == 3
 
-            topic_result_2 = dh.get_topic(project_name_2, topic_name_2)
+            topic_result_2 = dh.get_topic(project_name, topic_name_2)
             print(topic_result_2)
             assert topic_result_2.topic_name == topic_name_2
-            assert topic_result_2.project_name == project_name_2
+            assert topic_result_2.project_name == project_name
             assert topic_result_2.comment == '2'
             assert topic_result_2.life_cycle == 7
             assert topic_result_2.record_type == RecordType.BLOB
             assert topic_result_2.shard_count == 3
         finally:
-            clean_topic(dh, project_name_2)
-            dh.delete_project(project_name_2)
+            clean_topic(dh, project_name)
+            dh.delete_project(project_name)
 
     def test_get_unexist_topic(self):
-        project_name_3 = "topic_test_p%d_4" % int(time.time())
+        project_name = "topic_test_t"
         unexist_topic_name = "unexist_topic_test_t%d" % random.randint(1000, 9999)
 
         try:
-            dh.create_project(project_name_3, '')
+            dh.create_project(project_name, '')
         except ResourceExistException:
             pass
 
-        results = dh.list_topic(project_name_3)
+        results = dh.list_topic(project_name)
         unexist = True
 
         # try to find an unexist topic name and test
@@ -217,17 +218,17 @@ class TestTopic:
             # ======================= get unexisted topic =======================
             if unexist:
                 try:
-                    dh.get_topic(project_name_3, unexist_topic_name)
+                    dh.get_topic(project_name, unexist_topic_name)
                 except ResourceNotFoundException:
                     pass
                 else:
                     raise Exception('Get topic success with unexisted topic name')
         finally:
-            clean_topic(dh, project_name_3)
-            dh.delete_project(project_name_3)
+            clean_topic(dh, project_name)
+            dh.delete_project(project_name)
 
     def test_update_topic(self):
-        project_name_5 = "topic_test_p%d_5" % int(time.time())
+        project_name = "topic_test_t"
         topic_name_1 = "topic_test_t%d_1" % int(time.time())
         topic_name_2 = "topic_test_t%d_2" % int(time.time())
 
@@ -236,63 +237,66 @@ class TestTopic:
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
         try:
-            dh.create_project(project_name_5, '')
+            dh.create_project(project_name, '')
         except ResourceExistException:
             pass
 
         # make sure project wil be deleted
         try:
             try:
-                dh.create_tuple_topic(project_name_5, topic_name_1, 3, 7, record_schema, '1')
+                dh.create_tuple_topic(project_name, topic_name_1, 3, 7, record_schema, '1')
             except ResourceExistException:
                 pass
 
             try:
-                dh.create_blob_topic(project_name_5, topic_name_2, 3, 7, '2')
+                dh.create_blob_topic(project_name, topic_name_2, 3, 7, '2')
             except ResourceExistException:
                 pass
 
             time.sleep(1)
             # ======================= update topic =======================
-            dh.update_topic(project_name_5, topic_name_1, 7, "2")
-            topic_result_1 = dh.get_topic(project_name_5, topic_name_1)
+            dh.update_topic(project_name, topic_name_1, 7, "2")
+            topic_result_1 = dh.get_topic(project_name, topic_name_1)
             assert topic_result_1.life_cycle == 7
             assert topic_result_1.comment == "2"
 
-            dh.update_topic(project_name_5, topic_name_2, 5, "new comment")
-            topic_result_2 = dh.get_topic(project_name_5, topic_name_2)
-            assert topic_result_2.comment == "new comment"
+            try:
+                dh.update_topic(project_name, topic_name_2, 5, "new comment")
+            except LimitExceededException:
+                pass
+            # topic_result_2 = dh.get_topic(project_name, topic_name_2)
+            # assert topic_result_2.comment == "new comment"
 
         finally:
-            clean_topic(dh, project_name_5)
-            dh.delete_project(project_name_5)
+            clean_topic(dh, project_name)
+            dh.delete_project(project_name)
 
     def test_append_field(self):
-        project_name_6 = "topic_test_p%d_6" % int(time.time())
+        project_name = "topic_test_t"
         topic_name_1 = "topic_test_t%d_1" % int(time.time())
         record_schema = RecordSchema.from_lists(
             ['bigint_field', 'string_field', 'double_field', 'bool_field', 'event_time1'],
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
         try:
-            dh.create_project(project_name_6, '')
+            dh.create_project(project_name, '')
         except ResourceExistException:
             pass
 
         # make sure project wil be deleted
         try:
             try:
-                dh.create_tuple_topic(project_name_6, topic_name_1, 3, 7, record_schema, '1')
+                dh.create_tuple_topic(project_name, topic_name_1, 3, 7, record_schema, '1')
             except ResourceExistException:
                 pass
 
             time.sleep(1)
             # ======================= append field =======================
-            dh.append_field(project_name_6, topic_name_1, 'append', FieldType.BOOLEAN)
+            dh.append_field(project_name, topic_name_1, 'append', FieldType.BOOLEAN)
 
         finally:
-            clean_topic(dh, project_name_6)
-            dh.delete_project(project_name_6)
+            clean_topic(dh, project_name)
+            dh.delete_project(project_name)
 
 
 # run directly

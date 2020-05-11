@@ -23,7 +23,7 @@ from .models.params import *
 from .models.results import *
 from .auth import AliyunAccount
 from .exceptions import InvalidParameterException
-from .models import ShardState, OffsetBase, SubscriptionState, FieldType, ConnectorConfig
+from .models import ShardState, OffsetBase, SubscriptionState, FieldType
 from .rest import Path
 from .rest import RestClient
 from .utils import check_project_name_valid, check_topic_name_valid, check_type, check_positive, \
@@ -72,6 +72,15 @@ class DataHubJson(object):
         content = self._rest_client.get(url)
         result = GetProjectResult.parse_content(to_text(content), project_name=project_name)
         return result
+
+    def update_project(self, project_name, comment):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+
+        url = Path.PROJECT % project_name
+        request_param = UpdateProjectRequestParams(comment)
+
+        self._rest_client.put(url, data=request_param.content())
 
     def delete_project(self, project_name):
         if check_empty(project_name):
@@ -213,7 +222,7 @@ class DataHubJson(object):
             if not check_empty(shard_info):
                 begin_hash_key = int(shard_info.begin_hash_key, 16)
                 end_hash_key = int(shard_info.end_hash_key, 16)
-                split_key = hex(int((begin_hash_key + end_hash_key) // 2))[2:]
+                split_key = hex(int((begin_hash_key + end_hash_key) // 2))[2:34]
 
         url = Path.SHARDS % (project_name, topic_name)
         request_param = SplitShardRequestParams(shard_id, split_key)
@@ -293,88 +302,68 @@ class DataHubJson(object):
         if check_empty(topic_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
 
-        url = Path.CONNECTORS % (project_name, topic_name)
+        url = Path.CONNECTORS % (project_name, topic_name) + "?mode=id"
 
         content = self._rest_client.get(url)
 
         result = ListConnectorResult.parse_content(content)
         return result
 
-    def create_connector(self, project_name, topic_name, connector_type, column_fields, config):
+    def create_connector(self, project_name, topic_name, connector_type, column_fields, config, start_time):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
-        if not check_type(connector_type, ConnectorType):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_type', ConnectorType.__name__))
-        if not check_type(config, ConnectorConfig):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('config', ConnectorConfig.__name__))
 
         url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
-        request_param = CreateConnectorParams(column_fields, config)
+        request_param = CreateConnectorParams(column_fields, config, start_time)
 
-        self._rest_client.post(url, data=request_param.content())
+        content = self._rest_client.post(url, data=request_param.content())
 
-    def update_connector(self, project_name, topic_name, connector_type, config):
+        result = CreateConnectorResult.parse_content(content)
+        return result
+
+    def update_connector(self, project_name, topic_name, connector_id, config):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
-        if not check_type(connector_type, ConnectorType):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_type', ConnectorType.__name__))
-        if not check_type(config, ConnectorConfig):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('config', ConnectorConfig.__name__))
 
-        url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
+        url = Path.CONNECTOR % (project_name, topic_name, connector_id)
         request_param = UpdateConnectorParams(config)
 
         self._rest_client.post(url, data=request_param.content())
 
-    def get_connector(self, project_name, topic_name, connector_type):
+    def get_connector(self, project_name, topic_name, connector_id):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
-        if not check_type(connector_type, ConnectorType):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_type', ConnectorType.__name__))
 
-        url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
+        url = Path.CONNECTOR % (project_name, topic_name, connector_id)
 
         content = self._rest_client.get(url)
 
         result = GetConnectorResult.parse_content(content)
         return result
 
-    def delete_connector(self, project_name, topic_name, connector_type):
+    def delete_connector(self, project_name, topic_name, connector_id):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
-        if not check_type(connector_type, ConnectorType):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_type', ConnectorType.__name__))
 
-        url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
+        url = Path.CONNECTOR % (project_name, topic_name, connector_id)
 
         self._rest_client.delete(url)
 
-    def get_connector_shard_status(self, project_name, topic_name, connector_type, shard_id):
+    def get_connector_shard_status(self, project_name, topic_name, connector_id, shard_id=''):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
-        if check_empty(shard_id):
-            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'shard_id')
-        if not check_type(connector_type, ConnectorType):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_type', ConnectorType.__name__))
 
-        url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
+        url = Path.CONNECTOR % (project_name, topic_name, connector_id)
         request_param = GetConnectorShardStatusParams(shard_id)
 
         content = self._rest_client.post(url, data=request_param.content())
@@ -382,33 +371,62 @@ class DataHubJson(object):
         result = GetConnectorShardStatusResult.parse_content(content)
         return result
 
-    def reload_connector(self, project_name, topic_name, connector_type, shard_id=''):
+    def reload_connector(self, project_name, topic_name, connector_id, shard_id=''):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
-        if not check_type(connector_type, ConnectorType):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_type', ConnectorType.__name__))
 
-        url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
+        url = Path.CONNECTOR % (project_name, topic_name, connector_id)
         request_param = ReloadConnectorParams(shard_id)
 
         self._rest_client.post(url, data=request_param.content())
 
-    def append_connector_field(self, project_name, topic_name, connector_type, field_name):
+    def append_connector_field(self, project_name, topic_name, connector_id, field_name):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
         if check_empty(field_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'field_name')
-        if not check_type(connector_type, ConnectorType):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_type', ConnectorType.__name__))
 
-        url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
+        url = Path.CONNECTOR % (project_name, topic_name, connector_id)
         request_param = AppendConnectorFieldParams(field_name)
+
+        self._rest_client.post(url, data=request_param.content())
+
+    def get_connector_done_time(self, project_name, topic_name, connector_id):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+
+        url = Path.DONE_TIME % (project_name, topic_name, connector_id)
+
+        content = self._rest_client.get(url)
+
+        result = GetConnectorDoneTimeResult.parse_content(content)
+        return result
+
+    def update_connector_state(self, project_name, topic_name, connector_id, connector_state):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+
+        url = Path.CONNECTOR % (project_name, topic_name, connector_id)
+        request_param = UpdateConnectorStateParams(connector_state)
+
+        self._rest_client.post(url, data=request_param.content())
+
+    def update_connector_offset(self, project_name, topic_name, connector_id, shard_id, connector_offset):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+
+        url = Path.CONNECTOR % (project_name, topic_name, connector_id)
+        request_param = UpdateConnectorOffsetParams(shard_id, connector_offset)
 
         self._rest_client.post(url, data=request_param.content())
 
@@ -473,56 +491,9 @@ class DataHubJson(object):
 
         self._rest_client.put(url, data=request_param.content())
 
-    def get_connector_done_time(self, project_name, topic_name, connector_type):
-        if check_empty(project_name):
-            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
-        if check_empty(topic_name):
-            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
-        if not check_type(connector_type, ConnectorType):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_type', ConnectorType.__name__))
-
-        url = Path.DONE_TIME % (project_name, topic_name, connector_type.value)
-
-        content = self._rest_client.get(url)
-
-        result = GetConnectorDoneTimeResult.parse_content(content)
-        return result
-
     # =======================================================
     # internal api
     # =======================================================
-
-    def update_connector_state(self, project_name, topic_name, connector_type, connector_state):
-        if check_empty(project_name):
-            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
-        if check_empty(topic_name):
-            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
-        if not check_type(connector_type, ConnectorType):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_type', ConnectorType.__name__))
-        if not check_type(connector_state, ConnectorState):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_state', ConnectorState.__name__))
-
-        url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
-        request_param = UpdateConnectorStateParams(connector_state)
-
-        self._rest_client.post(url, data=request_param.content())
-
-    def update_connector_offset(self, project_name, topic_name, connector_type, shard_id, connector_offset):
-        if check_empty(project_name):
-            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
-        if check_empty(topic_name):
-            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
-        if not check_type(connector_type, ConnectorType):
-            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                            ('connector_type', ConnectorType.__name__))
-
-        url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
-        request_param = UpdateConnectorOffsetParams(shard_id, connector_offset)
-
-        self._rest_client.post(url, data=request_param.content())
 
     def create_subscription(self, project_name, topic_name, comment):
         if check_empty(project_name):

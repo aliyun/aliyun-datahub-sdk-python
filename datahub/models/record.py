@@ -116,6 +116,8 @@ class Record(object):
         return self._attributes[key]
 
     def put_attribute(self, key, value):
+        if key is None or value is None:
+            raise InvalidParameterException("key/value can not be None")
         self._attributes[key] = value
 
     def get_offset(self):
@@ -190,7 +192,7 @@ class BlobRecord(Record):
         super(BlobRecord, self).__init__()
         if blob_data:
             self._blob_data = blob_data
-        elif values:
+        elif values is not None:
             self._values = values
             self._blob_data = base64.b64decode(self._values)
         else:
@@ -222,9 +224,9 @@ class TupleRecord(Record):
     Tuple type record class
 
     Members:
-        fields (:class:`str`): fields
+        field_list (:class:`list`): fields
 
-        values (list): values
+        name_indices (:class:`list`): values
 
     :Example:
 

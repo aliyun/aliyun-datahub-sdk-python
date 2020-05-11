@@ -73,6 +73,30 @@ class CreateProjectRequestParams(RequestParams):
         })
 
 
+class UpdateProjectRequestParams(RequestParams):
+    """
+    Request params of update project api
+    """
+
+    __slots__ = '_comment'
+
+    def __init__(self, comment):
+        self._comment = comment
+
+    @property
+    def comment(self):
+        return self._comment
+
+    @comment.setter
+    def comment(self, value):
+        self._comment = value
+
+    def content(self):
+        return json.dumps({
+            "Comment": self._comment
+        })
+
+
 class CreateTopicRequestParams(RequestParams):
     """
     Request params of create topic api
@@ -409,13 +433,14 @@ class CreateConnectorParams(RequestParams):
     Request params of create data connector api
     """
 
-    __slots__ = ('_column_fields', '_config')
+    __slots__ = ('_column_fields', '_config', '_start_time')
 
-    def __init__(self, column_fields, config):
+    def __init__(self, column_fields, config, start_time):
         self._column_fields = column_fields
         if not self._column_fields:
             self._column_fields = []
         self._config = config
+        self._start_time = start_time
 
     @property
     def column_fields(self):
@@ -433,11 +458,20 @@ class CreateConnectorParams(RequestParams):
     def config(self, value):
         self._config = value
 
+    @property
+    def start_time(self):
+        return self._start_time
+
+    @start_time.setter
+    def start_time(self, value):
+        self._start_time = value
+
     def content(self):
         return json.dumps({
             "Action": "Create",
             "ColumnFields": self._column_fields,
-            "Config": self._config.to_json()
+            "Config": self._config.to_json(),
+            "SinkStartTime": self._start_time
         })
 
 
@@ -461,7 +495,7 @@ class UpdateConnectorParams(RequestParams):
 
     def content(self):
         return json.dumps({
-            "Action": "Updateconfig",
+            "Action": "updateconfig",
             "Config": self._config.to_json()
         })
 
@@ -485,10 +519,12 @@ class GetConnectorShardStatusParams(RequestParams):
         self._shard_id = value
 
     def content(self):
-        return json.dumps({
-            "Action": "Status",
-            "ShardId": self._shard_id
-        })
+        data = {
+            "Action": "Status"
+        }
+        if self._shard_id:
+            data['ShardId'] = self._shard_id
+        return json.dumps(data)
 
 
 class ReloadConnectorParams(RequestParams):
@@ -714,9 +750,10 @@ class UpdateConnectorOffsetParams(RequestParams):
 
     def content(self):
         data = {
-            'Action': 'UpdateShardContext',
-            'ShardId': self._shard_id
+            'Action': 'UpdateShardContext'
         }
+        if self._shard_id:
+            data['ShardId'] = self._shard_id
         if self._connector_offset.sequence > -1:
             data["CurrentSequence"] = self._connector_offset.sequence
         if self._connector_offset.timestamp > -1:

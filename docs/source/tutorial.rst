@@ -16,6 +16,21 @@ Datahub相关的基本概念
 * 访问DataHub服务需要使用阿里云认证账号，需要提供阿里云accessId及accessKey。 同时需要提供可访问的DataHub服务地址。
 * 登陆 `Datahub WebConsole页面 <https://datahub.console.aliyun.com/datahub>`_ ，创建Project 
 
+日志信息
+=========
+
+可以在自己的代码中设置日志的输出和打印级别，sdk中主要包含一些debug日志和error日志，以下是将sdk的DEBUG日志打印到控制台的配置样例
+
+.. code-block:: python
+
+    import logging
+
+    logger = logging.getLogger('datahub')
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.DEBUG)
+    logger.addHandler(sh)
+
+
 初始化DataHub对象
 =================
 

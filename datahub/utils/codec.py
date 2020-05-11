@@ -25,8 +25,9 @@ from base64 import b64encode
 from hashlib import sha1
 
 import crcmod.predefined
+import six
 
-from .converters import to_binary
+from .converters import to_binary, to_str
 
 
 def hmac_sha1(secret, data):
@@ -48,6 +49,6 @@ def unwrap_pb_frame(pb_frame):
     crc32c = crcmod.predefined.mkCrcFun('crc-32c')
     binary = to_binary(pb_frame)
     crc = binary[4:8]
-    pb_str = pb_frame[12:]
+    pb_str = pb_frame[12:] if six.PY3 else to_str(pb_frame[12:])
     compute_crc = struct.pack('>I', crc32c(pb_str) & 0xffffffff)
     return crc, compute_crc, pb_str

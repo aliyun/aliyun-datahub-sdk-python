@@ -20,8 +20,13 @@
 from __future__ import absolute_import, print_function
 
 import re
+from functools import wraps
 
 import six
+from funcsigs import signature
+
+from . import ErrorMessage
+from ..exceptions import InvalidParameterException
 
 PROJECT_NAME_REGULAR_EXPRESSION = r'^[a-zA-Z]+[a-zA-Z0-9_]*'
 TOPIC_NAME_REGULAR_EXPRESSION = r'^[a-zA-Z]+[a-zA-Z0-9_]*'
@@ -68,3 +73,32 @@ def check_negative(variable):
 
 def check_positive(variable):
     return variable > 0
+
+
+def type_assert(*type_args, **type_kwargs):
+    def decorate(func):
+        signature_ = signature(func)
+        bound_types = signature_.bind_partial(*type_args, **type_kwargs).arguments
+
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            bound_values = signature_.bind(*args, **kwargs)
+            # Enforce type assertions across supplied arguments
+            for name, value in bound_values.arguments.items():
+                if name in bound_types:
+                    # pre check for special argument
+                    if name == 'cursor' and type(value).__name__ == 'GetCursorResult':
+                        raise InvalidParameterException('param cursor should be type of str, get the cursor from '
+                                                        'getCursorResult')
+
+                    if not isinstance(value, bound_types[name]):
+                        # for python 2.7
+                        if not (type(value).__name__ == "unicode" and (str in bound_types[name] if isinstance(bound_types[name], tuple) else bound_types[name] == str)):
+                            raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
+                                                            (name, bound_types[name].__name__)
+                                                            + ", input is: " + type(value).__name__)
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorate

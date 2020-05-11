@@ -28,7 +28,7 @@ access_id = '******* your access id *******'
 access_key = '******* your access key *******'
 endpoint = '******* your endpoint *******'
 
-dh = DataHub(access_id, access_key, endpoint)
+dh = DataHub(access_id, access_key, endpoint, read_timeout=10)
 
 project_name = 'tuple_record_test'
 topic_name = 'tuple_record_test'
@@ -77,31 +77,33 @@ try:
         print(shard)
     print("=======================================\n\n")
 
-    records = []
+    while True:
+        records = []
 
-    record0 = TupleRecord(schema=topic.record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
-    record0.shard_id = shards[0].shard_id
-    record0.put_attribute('AK', '47')
-    records.append(record0)
+        record0 = TupleRecord(schema=topic.record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
+        record0.shard_id = shards[0].shard_id
+        record0.put_attribute('AK', '47')
+        records.append(record0)
 
-    record1 = TupleRecord(schema=topic.record_schema)
-    record1.values = [1, 'yc1', 10.01, True, 1455869335000000]
-    record1.shard_id = shards[1].shard_id
-    records.append(record1)
+        record1 = TupleRecord(schema=topic.record_schema)
+        record1.values = [1, 'yc1', 10.01, True, 1455869335000000]
+        record1.shard_id = shards[1].shard_id
+        records.append(record1)
 
-    record2 = TupleRecord(schema=topic.record_schema)
-    record2.set_value(0, 3)
-    record2.set_value(1, 'yc3')
-    record2.set_value('double_field', 10.03)
-    record2.set_value('bool_field', False)
-    record2.set_value('time_field', 1455869335000013)
-    record2.shard_id = shards[2].shard_id
-    records.append(record2)
+        record2 = TupleRecord(schema=topic.record_schema)
+        record2.set_value(0, 3)
+        record2.set_value(1, 'yc3')
+        record2.set_value('double_field', 10.03)
+        record2.set_value('bool_field', False)
+        record2.set_value('time_field', 1455869335000013)
+        record2.shard_id = shards[2].shard_id
+        records.append(record2)
 
-    failed_indexs = dh.put_records(project_name, topic_name, records)
-    print("put tuple %d records, failed list: %s" % (len(records), failed_indexs))
-    # failed_indexs如果非空最好对failed record再进行重试
-    print("=======================================\n\n")
+        failed_indexs = dh.put_records(project_name, topic_name, records)
+        print("put tuple %d records, failed list: %s" % (len(records), failed_indexs))
+        # failed_indexs如果非空最好对failed record再进行重试
+        print("=======================================\n\n")
+
 
 except DatahubException as e:
     print(traceback.format_exc())

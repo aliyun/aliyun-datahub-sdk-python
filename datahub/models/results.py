@@ -26,7 +26,7 @@ import six
 
 from datahub.exceptions import DatahubException
 from .connector import ConnectorType, ConnectorState, get_connector_builder_by_type, \
-    ConnectorShardStatus
+    ConnectorShardStatus, ShardStatusEntry
 from .record import FailedRecord, BlobRecord, TupleRecord, RecordType
 from .schema import RecordSchema
 from .shard import Shard, ShardBase, ShardContext
@@ -712,8 +712,9 @@ class ListConnectorResult(Result):
 
     __slots__ = '_connector_names'
 
-    def __init__(self, connector_names):
+    def __init__(self, connector_names, connector_ids):
         self._connector_names = connector_names
+        self._connector_ids = connector_ids
 
     @property
     def connector_names(self):
@@ -723,14 +724,54 @@ class ListConnectorResult(Result):
     def connector_names(self, value):
         self._connector_names = value
 
+    @property
+    def connector_ids(self):
+        return self._connector_ids
+
+    @connector_ids.setter
+    def connector_ids(self, value):
+        self._connector_ids = value
+
     @classmethod
     def parse_content(cls, content, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['Connectors'])
+        return cls(content['Connectors'], content['Connectors'])
 
     def to_json(self):
         return {
             'Connectors': self._connector_names
+        }
+
+
+class CreateConnectorResult(Result):
+    """
+    Result of create connector
+
+    Members:
+        connector_id (:class:`str`): connector id
+    """
+
+    __slots__ = '_connector_id'
+
+    def __init__(self, connector_id):
+        self._connector_id = connector_id
+
+    @property
+    def connector_id(self):
+        return self._connector_id
+
+    @connector_id.setter
+    def connector_id(self, value):
+        self._connector_id = value
+
+    @classmethod
+    def parse_content(cls, content, **kwargs):
+        content = json.loads(to_text(content))
+        return cls(content.get('ConnectorId',''))
+
+    def to_json(self):
+        return {
+            'ConnectorId': self._connector_id
         }
 
 
@@ -739,7 +780,9 @@ class GetConnectorResult(Result):
     Result of get data connector
 
     Members:
-        column_fields (:class:`list`): list of column fields
+        cluster_addr (:class:`str`): cluster address
+
+        connector_id (:class:`str`): connector id
 
         type (:class:`datahub.models.ConnectorType`): connector type
 
@@ -749,21 +792,61 @@ class GetConnectorResult(Result):
 
         owner (:class:`str`): owner
 
+        create_time (:class:`int`): create time
+
+        column_fields (:class:`list`): list of column fields
+
         config (:class:`datahub.models.OdpsConnectorConfig`): config
 
+        extra_config (:class:`dict`): extra config
+
         shard_contexts (:class:`list`): list of :obj:`datahub.models.ShardContext`
+
+        sub_id (:class:`str`): subscription id used by connector
     """
 
-    __slots__ = ('_column_fields', '_type', '_state', '_creator', '_owner', '_config', '_shard_contexts')
+    __slots__ = (
+        '_cluster_addr', '_connector_id', '_type', '_state', '_creator', '_owner', '_create_time', '_column_fields',
+        '_config', '_extra_config', '_shard_contexts', '_sub_id')
 
-    def __init__(self, column_fields, connector_type, state, creator, owner, config, shard_contexts):
-        self._column_fields = column_fields
+    def __init__(self, cluster_addr, connector_id, connector_type, state, creator, owner, create_time, column_fields,
+                 config, extra_config, shard_contexts, sub_id):
+        self._cluster_addr = cluster_addr
+        self._connector_id = connector_id
         self._type = connector_type
         self._state = state
         self._creator = creator
+        self._create_time = create_time
+        self._column_fields = column_fields
         self._owner = owner
         self._config = config
+        self._extra_config = extra_config
         self._shard_contexts = shard_contexts
+        self._sub_id = sub_id
+
+    @property
+    def cluster_addr(self):
+        return self._cluster_addr
+
+    @cluster_addr.setter
+    def cluster_addr(self, value):
+        self._cluster_addr = value
+
+    @property
+    def connector_id(self):
+        return self._connector_id
+
+    @connector_id.setter
+    def connector_id(self, value):
+        self._connector_id = value
+
+    @property
+    def create_time(self):
+        return self._create_time
+
+    @create_time.setter
+    def create_time(self, value):
+        self._create_time = value
 
     @property
     def column_fields(self):
@@ -814,6 +897,14 @@ class GetConnectorResult(Result):
         self._config = value
 
     @property
+    def extra_config(self):
+        return self._extra_config
+
+    @extra_config.setter
+    def extra_config(self, value):
+        self._extra_config = value
+
+    @property
     def shard_contexts(self):
         return self._shard_contexts
 
@@ -821,25 +912,44 @@ class GetConnectorResult(Result):
     def shard_contexts(self, value):
         self._shard_contexts = value
 
+    @property
+    def sub_id(self):
+        return self._sub_id
+
+    @sub_id.setter
+    def sub_id(self, value):
+        self._sub_id = value
+
     @classmethod
     def parse_content(cls, content, **kwargs):
         content = json.loads(to_text(content))
+        cluster_addr = content.get('ClusterAddress', '')
+        connector_id = content.get('ConnectorId', '')
         connector_type = ConnectorType(content['Type'])
-        builder = get_connector_builder_by_type(connector_type)
-        connector_config = builder.from_dict(content['Config'])
-        shard_contexts = [ShardContext.from_dict(item) for item in content['ShardContexts']]
-        return cls(content['ColumnFields'], connector_type, ConnectorState(content['State']),
-                   content['Creator'], content['Owner'], connector_config, shard_contexts)
+        state = ConnectorState(content['State'])
+        creator = content.get('Creator', '')
+        owner = content.get('Owner', '')
+        create_time = content.get('CreateTime', 0)
+        column_fields = content.get('ColumnFields', [])
+        connector_config = get_connector_builder_by_type(connector_type).from_dict(content['Config'])
+        extra_config = content.get('ExtraInfo', {})
+        shard_contexts = [ShardContext.from_dict(item) for item in content['ShardContexts']] # deprecated
+        sub_id = extra_config.get('SubscriptionId', '')
+        return cls(cluster_addr, connector_id, connector_type, state, creator, owner, create_time, column_fields,
+                   connector_config, extra_config, shard_contexts, sub_id)
 
     def to_json(self):
         return {
-            'ColumnFields': self._column_fields,
+            'ClusterAddress': self._cluster_addr,
+            'ConnectorId': self._connector_id,
             'Type': self._type.value,
             'State': self.state.value,
             'Creator': self._creator,
             'Owner': self._owner,
+            'CreateTime': self._create_time,
+            'ColumnFields': self._column_fields,
             'ConnectorConfig': self._config.to_json(),
-            'ShardContexts': [shard_context.to_json() for shard_context in self._shard_contexts]
+            'ExtraInfo': self._extra_config,
         }
 
 
@@ -848,117 +958,43 @@ class GetConnectorShardStatusResult(Result):
     Result of get data connector shard status
 
     Members:
-        start_sequence (:class:`int`): start sequence
-
-        end_sequence (:class:`int`): end sequence
-
-        current_sequence (:class:`int`): current sequence
-
-        last_error_message (:class:`str`): last error message
-
-        state (:class:`datahub.models.connector.ConnectorShardStatus`): state
-
-        update_time (:class:`int`): update time
-
-        record_time (:class:`int`): record time
-
-        discard_count (:class:`int`): discard count
+        shard_status_infos (:class:`dict`): shard status entry map
     """
 
-    __slots__ = ('_start_sequence', '_end_sequence', '_current_sequence', '_last_error_message',
-                 '_state', '_update_time', '_record_time', '_discard_count')
+    __slots__ = '_shard_status_infos'
 
-    def __init__(self, start_sequence, end_sequence, current_sequence, last_error_message, state,
-                 update_time, record_time, discard_count):
-        self._start_sequence = start_sequence
-        self._end_sequence = end_sequence
-        self._current_sequence = current_sequence
-        self._last_error_message = last_error_message
-        self._state = state
-        self._update_time = update_time
-        self._record_time = record_time
-        self._discard_count = discard_count
+    def __init__(self, shard_status_infos):
+        self._shard_status_infos = shard_status_infos
 
     @property
-    def start_sequence(self):
-        return self._start_sequence
+    def shard_status_infos(self):
+        return self._shard_status_infos
 
-    @start_sequence.setter
-    def start_sequence(self, value):
-        self._start_sequence = value
-
-    @property
-    def end_sequence(self):
-        return self._end_sequence
-
-    @end_sequence.setter
-    def end_sequence(self, value):
-        self._end_sequence = value
-
-    @property
-    def current_sequence(self):
-        return self._current_sequence
-
-    @current_sequence.setter
-    def current_sequence(self, value):
-        self._current_sequence = value
-
-    @property
-    def last_error_message(self):
-        return self._last_error_message
-
-    @last_error_message.setter
-    def last_error_message(self, value):
-        self._last_error_message = value
-
-    @property
-    def state(self):
-        return self._state
-
-    @state.setter
-    def state(self, value):
-        self._state = value
-
-    @property
-    def update_time(self):
-        return self._update_time
-
-    @update_time.setter
-    def update_time(self, value):
-        self._update_time = value
-
-    @property
-    def record_time(self):
-        return self._record_time
-
-    @record_time.setter
-    def record_time(self, value):
-        self._record_time = value
-
-    @property
-    def discard_count(self):
-        return self._discard_count
-
-    @discard_count.setter
-    def discard_count(self, value):
-        self._discard_count = value
+    @shard_status_infos.setter
+    def shard_status_infos(self, value):
+        self._shard_status_infos = value
 
     @classmethod
     def parse_content(cls, content, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['StartSequence'], content['EndSequence'], content['CurrentSequence'],
-                   content['LastErrorMessage'], ConnectorShardStatus(content['State']), content['UpdateTime'],
-                   content['RecordTime'], content['DiscardCount'])
+        shard_status_infos = {}
+        if 'ShardStatusInfos' in content:
+            for (k, v) in content.get('ShardStatusInfos', {}).items():
+                shard_status_infos.update({
+                    k: ShardStatusEntry.from_dict(v)
+                })
+        else:
+            shard_status_infos[content['ShardId']] = ShardStatusEntry.from_dict(content)
+        return cls(shard_status_infos)
 
     def to_json(self):
+        shard_status_infos = {}
+        for (k, v) in self._shard_status_infos.items():
+            shard_status_infos.update({
+                k: v.to_json()
+            })
         return {
-            'StartSequence': self._start_sequence,
-            'EndSequence': self._end_sequence,
-            'CurrentSequence': self._current_sequence,
-            'LastErrorMessage': self._last_error_message,
-            'State': self._state.value,
-            'UpdateTime': self._update_time,
-            'RecordTime': self._record_time
+            'ShardStatusInfos': shard_status_infos
         }
 
 
@@ -1052,12 +1088,18 @@ class GetConnectorDoneTimeResult(Result):
 
     Members:
         done_time (:class`int`): done time
+
+        time_zone (:class`str`): time zone
+
+        time_window (:class`int`): time window
     """
 
-    __slots__ = '_done_time'
+    __slots__ = ('_done_time', '_time_zone', '_time_window')
 
-    def __init__(self, done_time):
+    def __init__(self, done_time, time_zone, time_window):
         self._done_time = done_time
+        self._time_zone = time_zone
+        self._time_window = time_window
 
     @property
     def done_time(self):
@@ -1067,14 +1109,35 @@ class GetConnectorDoneTimeResult(Result):
     def done_time(self, value):
         self._done_time = value
 
+    @property
+    def time_zone(self):
+        return self._time_zone
+
+    @time_zone.setter
+    def time_zone(self, value):
+        self._time_zone = value
+
+    @property
+    def time_window(self):
+        return self._time_window
+
+    @time_window.setter
+    def time_window(self, value):
+        self._time_window = value
+
     @classmethod
     def parse_content(cls, content, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['DoneTime'])
+        done_time = content.get('DoneTime', 0)
+        time_zone = content.get('TimeZone', '')
+        time_window = content.get('TimeWindow', 0)
+        return cls(done_time, time_zone, time_window)
 
     def to_json(self):
         return {
-            'DoneTime': self._done_time
+            'DoneTime': self._done_time,
+            'TimeZone': self._time_zone,
+            'TimeWindow': self._time_window
         }
 
 

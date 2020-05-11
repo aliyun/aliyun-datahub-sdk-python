@@ -16,62 +16,25 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
+import base64
 import json
 import os
+import sys
 
-from httmock import HTTMock, urlmatch, response
+sys.path.append('./')
+
+from httmock import HTTMock
 
 from datahub import DataHub
 from datahub.exceptions import ResourceNotFoundException, InvalidOperationException, \
     InvalidParameterException, LimitExceededException
 from datahub.models import RecordSchema, FieldType, BlobRecord, TupleRecord
-
-_TESTS_PATH = os.path.abspath(os.path.dirname(__file__))
-_FIXTURE_PATH = os.path.join(_TESTS_PATH, '../fixtures')
+from datahub.proto.datahub_record_proto_pb import PutRecordsRequest, GetRecordsRequest
+from datahub.utils import unwrap_pb_frame
+from .unittest_util import gen_mock_api, gen_pb_mock_api, _TESTS_PATH
 
 dh = DataHub('access_id', 'access_key', 'http://endpoint', enable_pb=False)
 dh2 = DataHub('access_id', 'access_key', 'http://endpoint', enable_pb=True)
-
-
-@urlmatch(netloc=r'(.*\.)?endpoint')
-def datahub_api_mock(url, request):
-    path = url.path.replace('/', '.')[1:]
-    res_file = os.path.join(_FIXTURE_PATH, '%s.json' % path)
-    status_code = 200
-    content = {
-    }
-    headers = {
-        'Content-Type': 'application/json',
-        'x-datahub-request-id': 0
-    }
-    try:
-        with open(res_file, 'rb') as f:
-            content = json.loads(f.read().decode('utf-8'))
-            if 'ErrorCode' in content:
-                status_code = 500
-    except (IOError, InvalidParameterException) as e:
-        content['ErrorMessage'] = 'Loads fixture %s failed, error: %s' % (res_file, e)
-    return response(status_code, content, headers, request=request)
-
-
-@urlmatch(netloc=r'(.*\.)?endpoint')
-def datahub_pb_api_mock(url, request):
-    path = url.path.replace('/', '.')[1:]
-    res_file = os.path.join(_FIXTURE_PATH, '%s.bin' % path)
-    status_code = 200
-    content = {
-    }
-    headers = {
-        'Content-Type': 'application/x-protobuf',
-        'x-datahub-request-id': 0
-    }
-    try:
-        with open(res_file, 'rb') as f:
-            content = f.read()
-    except (IOError, InvalidParameterException) as e:
-        content['ErrorMessage'] = 'Loads fixture %s failed, error: %s' % (res_file, e)
-    return response(status_code, content, headers, request=request)
 
 
 class TestRecord:
@@ -116,7 +79,17 @@ class TestRecord:
         record2.partition_key = 'TestPartitionKey'
         records.append(record2)
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/put/topics/success/shards'
+            content = json.loads(request.body)
+            assert content['Action'] == 'pub'
+            assert len(content['Records']) == 3
+            assert base64.b64decode(content['Records'][0]['Data']) == data
+            assert base64.b64decode(content['Records'][1]['Data']) == data
+            assert base64.b64decode(content['Records'][2]['Data']) == data
+
+        with HTTMock(gen_mock_api(check)):
             put_result = dh.put_records(project_name, topic_name, records)
 
         assert put_result.failed_record_count == 0
@@ -141,7 +114,16 @@ class TestRecord:
         record2.partition_key = 'TestPartitionKey'
         records.append(record2)
 
-        with HTTMock(datahub_pb_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/put/topics/success/shards'
+            crc, compute_crc, pb_str = unwrap_pb_frame(request.body)
+            pb_put_record_request = PutRecordsRequest()
+            pb_put_record_request.ParseFromString(pb_str)
+            for pb_record in pb_put_record_request.records:
+                assert pb_record.data.data[0].value == data
+
+        with HTTMock(gen_pb_mock_api(check)):
             put_result = dh2.put_records(project_name, topic_name, records)
 
         assert put_result.failed_record_count == 0
@@ -171,7 +153,11 @@ class TestRecord:
         record2.partition_key = 'TestPartitionKey'
         records.append(record2)
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/put/topics/success/shards'
+
+        with HTTMock(gen_mock_api(check)):
             put_result = dh.put_records(project_name, topic_name, records)
 
         assert put_result.failed_record_count == 0
@@ -199,7 +185,35 @@ class TestRecord:
         record2.partition_key = 'TestPartitionKey'
         records.append(record2)
 
-        with HTTMock(datahub_pb_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/put/topics/success/shards'
+            crc, compute_crc, pb_str = unwrap_pb_frame(request.body)
+            pb_put_record_request = PutRecordsRequest()
+            pb_put_record_request.ParseFromString(pb_str)
+            assert len(pb_put_record_request.records) == 3
+            assert len(pb_put_record_request.records[0].data.data) == 5
+            assert pb_put_record_request.records[0].data.data[0].value == b'1'
+            assert pb_put_record_request.records[0].data.data[1].value == b'yc1'
+            assert pb_put_record_request.records[0].data.data[2].value == b'10.01'
+            assert pb_put_record_request.records[0].data.data[3].value == b'true'
+            assert pb_put_record_request.records[0].data.data[4].value == b'253402271999000000'
+
+            assert len(pb_put_record_request.records[1].data.data) == 5
+            assert pb_put_record_request.records[1].data.data[0].value == b'-9223372036854775808'
+            assert pb_put_record_request.records[1].data.data[1].value == b'yc1'
+            assert pb_put_record_request.records[1].data.data[2].value == b'10.01'
+            assert pb_put_record_request.records[1].data.data[3].value == b'true'
+            assert pb_put_record_request.records[1].data.data[4].value == b'-62135798400000000'
+
+            assert len(pb_put_record_request.records[2].data.data) == 5
+            assert pb_put_record_request.records[2].data.data[0].value == b'9223372036854775807'
+            assert pb_put_record_request.records[2].data.data[1].value == b'yc1'
+            assert pb_put_record_request.records[2].data.data[2].value == b'10.01'
+            assert pb_put_record_request.records[2].data.data[3].value == b'true'
+            assert pb_put_record_request.records[2].data.data[4].value == b'1455869335000000'
+
+        with HTTMock(gen_pb_mock_api(check)):
             put_result = dh2.put_records(project_name, topic_name, records)
 
         assert put_result.failed_record_count == 0
@@ -215,7 +229,20 @@ class TestRecord:
         record = TupleRecord(schema=record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
         record.shard_id = '0'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/put/topics/malformed/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'pub'
+                assert len(content['Records']) == 1
+                assert len(content['Records'][0]['Data']) == 5
+                assert content['Records'][0]['Data'][0] == '1'
+                assert content['Records'][0]['Data'][1] == 'yc1'
+                assert content['Records'][0]['Data'][2] == '1.001e+01'
+                assert content['Records'][0]['Data'][3] == 'true'
+                assert content['Records'][0]['Data'][4] == '1455869335000000'
+
+            with HTTMock(gen_mock_api(check)):
                 put_result = dh.put_records(project_name, topic_name, [record])
         except InvalidParameterException:
             pass
@@ -232,7 +259,20 @@ class TestRecord:
         record = TupleRecord(schema=record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
         record.shard_id = '0'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/put/topics/invalid_state/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'pub'
+                assert len(content['Records']) == 1
+                assert len(content['Records'][0]['Data']) == 5
+                assert content['Records'][0]['Data'][0] == '1'
+                assert content['Records'][0]['Data'][1] == 'yc1'
+                assert content['Records'][0]['Data'][2] == '1.001e+01'
+                assert content['Records'][0]['Data'][3] == 'true'
+                assert content['Records'][0]['Data'][4] == '1455869335000000'
+
+            with HTTMock(gen_mock_api(check)):
                 put_result = dh.put_records(project_name, topic_name, [record])
         except InvalidOperationException:
             pass
@@ -249,7 +289,20 @@ class TestRecord:
         record = TupleRecord(schema=record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
         record.shard_id = '0'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/put/topics/limit_exceeded/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'pub'
+                assert len(content['Records']) == 1
+                assert len(content['Records'][0]['Data']) == 5
+                assert content['Records'][0]['Data'][0] == '1'
+                assert content['Records'][0]['Data'][1] == 'yc1'
+                assert content['Records'][0]['Data'][2] == '1.001e+01'
+                assert content['Records'][0]['Data'][3] == 'true'
+                assert content['Records'][0]['Data'][4] == '1455869335000000'
+
+            with HTTMock(gen_mock_api(check)):
                 put_result = dh.put_records(project_name, topic_name, [record])
         except LimitExceededException:
             pass
@@ -298,7 +351,20 @@ class TestRecord:
         record = TupleRecord(schema=record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
         record.shard_id = '0'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'pub'
+                assert len(content['Records']) == 1
+                assert len(content['Records'][0]['Data']) == 5
+                assert content['Records'][0]['Data'][0] == '1'
+                assert content['Records'][0]['Data'][1] == 'yc1'
+                assert content['Records'][0]['Data'][2] == '1.001e+01'
+                assert content['Records'][0]['Data'][3] == 'true'
+                assert content['Records'][0]['Data'][4] == '1455869335000000'
+
+            with HTTMock(gen_mock_api(check)):
                 put_result = dh.put_records(project_name, topic_name, [record])
         except ResourceNotFoundException:
             pass
@@ -315,7 +381,20 @@ class TestRecord:
         record = TupleRecord(schema=record_schema, values=[1, 'yc1', 10.01, True, 1455869335000000])
         record.shard_id = '0'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted/shards'
+                content = json.loads(request.body)
+                assert content['Action'] == 'pub'
+                assert len(content['Records']) == 1
+                assert len(content['Records'][0]['Data']) == 5
+                assert content['Records'][0]['Data'][0] == '1'
+                assert content['Records'][0]['Data'][1] == 'yc1'
+                assert content['Records'][0]['Data'][2] == '1.001e+01'
+                assert content['Records'][0]['Data'][3] == 'true'
+                assert content['Records'][0]['Data'][4] == '1455869335000000'
+
+            with HTTMock(gen_mock_api(check)):
                 put_result = dh.put_records(project_name, topic_name, [record])
         except ResourceNotFoundException:
             pass
@@ -329,7 +408,15 @@ class TestRecord:
         limit_num = 10
         cursor = '20000000000000000000000000fb0021'
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/get/topics/blob/shards/0'
+            content = json.loads(request.body)
+            assert content['Limit'] == 10
+            assert content['Action'] == 'sub'
+            assert content['Cursor'] == '20000000000000000000000000fb0021'
+
+        with HTTMock(gen_mock_api(check)):
             get_result = dh.get_blob_records(project_name, topic_name, shard_id, cursor, limit_num)
         print(get_result)
         print(get_result.records[0])
@@ -347,7 +434,16 @@ class TestRecord:
         limit_num = 10
         cursor = '20000000000000000000000000fb0021'
 
-        with HTTMock(datahub_pb_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/get/topics/blob/shards/0'
+            crc, compute_crc, pb_str = unwrap_pb_frame(request.body)
+            pb_get_record_request = GetRecordsRequest()
+            pb_get_record_request.ParseFromString(pb_str)
+            assert pb_get_record_request.cursor == '20000000000000000000000000fb0021'
+            assert pb_get_record_request.limit == 10
+
+        with HTTMock(gen_pb_mock_api(check)):
             get_result = dh2.get_blob_records(project_name, topic_name, shard_id, cursor, limit_num)
         print(get_result)
         print(get_result.records[0])
@@ -368,7 +464,15 @@ class TestRecord:
             ['bigint_field', 'string_field', 'double_field', 'bool_field', 'time_field'],
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/get/topics/tuple/shards/0'
+            content = json.loads(request.body)
+            assert content['Limit'] == 10
+            assert content['Action'] == 'sub'
+            assert content['Cursor'] == '20000000000000000000000000fb0021'
+
+        with HTTMock(gen_mock_api(check)):
             get_result = dh.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor, limit_num)
         print(get_result)
         print(get_result.records[0])
@@ -377,7 +481,7 @@ class TestRecord:
         assert get_result.start_seq == 0
         assert len(get_result.records) == 1
         assert get_result.records[0].system_time == 1526293795168
-        assert get_result.records[0].values == (1, 'yc1', 10.01, True, 1455869335000000)
+        assert get_result.records[0].values == (1, 'yc1', 10.01, False, 1455869335000000)
         assert get_result.records[0].attributes == {"string": "string"}
 
     def test_get_tuple_record_pb_success(self):
@@ -390,7 +494,16 @@ class TestRecord:
             ['bigint_field', 'string_field', 'double_field', 'bool_field', 'time_field'],
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
-        with HTTMock(datahub_pb_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/get/topics/tuple/shards/0'
+            crc, compute_crc, pb_str = unwrap_pb_frame(request.body)
+            pb_get_record_request = GetRecordsRequest()
+            pb_get_record_request.ParseFromString(pb_str)
+            assert pb_get_record_request.cursor == '20000000000000000000000000fb0021'
+            assert pb_get_record_request.limit == 10
+
+        with HTTMock(gen_pb_mock_api(check)):
             get_result = dh2.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor, limit_num)
         print(get_result)
         print(get_result.records[0])
@@ -401,6 +514,7 @@ class TestRecord:
         assert get_result.records[0].system_time == 1527161792134
         assert get_result.records[0].values == (99, 'yc1', 10.01, True, 1455869335000000)
         assert get_result.records[0].attributes == {}
+        assert get_result.records[2].values == (99, 'yc2', 10.02, False, 1455869335000011)
 
     def test_get_record_with_invalid_cursor(self):
         project_name = 'get'
@@ -413,7 +527,15 @@ class TestRecord:
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/get/topics/invalid_cursor/shards/0'
+                content = json.loads(request.body)
+                assert content['Limit'] == 10
+                assert content['Action'] == 'sub'
+                assert content['Cursor'] == '20000000000000000000000000fb0021'
+
+            with HTTMock(gen_mock_api(check)):
                 get_result = dh.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor, limit_num)
         except InvalidParameterException:
             pass
@@ -482,7 +604,15 @@ class TestRecord:
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid/shards/0'
+                content = json.loads(request.body)
+                assert content['Limit'] == 10
+                assert content['Action'] == 'sub'
+                assert content['Cursor'] == '20000000000000000000000000fb0021'
+
+            with HTTMock(gen_mock_api(check)):
                 get_result = dh.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor, limit_num)
         except ResourceNotFoundException:
             pass
@@ -500,7 +630,15 @@ class TestRecord:
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted/shards/0'
+                content = json.loads(request.body)
+                assert content['Limit'] == 10
+                assert content['Action'] == 'sub'
+                assert content['Cursor'] == '20000000000000000000000000fb0021'
+
+            with HTTMock(gen_mock_api(check)):
                 get_result = dh.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor, limit_num)
         except ResourceNotFoundException:
             pass
@@ -518,7 +656,15 @@ class TestRecord:
             [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/valid/shards/0'
+                content = json.loads(request.body)
+                assert content['Limit'] == 10
+                assert content['Action'] == 'sub'
+                assert content['Cursor'] == '20000000000000000000000000fb0021'
+
+            with HTTMock(gen_mock_api(check)):
                 get_result = dh.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor, limit_num)
         except ResourceNotFoundException:
             pass

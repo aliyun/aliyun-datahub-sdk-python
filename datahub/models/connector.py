@@ -36,7 +36,7 @@ if six.PY3:
 class ConnectorType(Enum):
     """
     ConnectorType enum class, there are: ``SINK_ODPS``, ``SINK_ADS``, ``SINK_ES``, ``SINK_FC``, \
-    ``SINK_MYSQL``, ``SINK_OSS``, ``SINK_OTS``
+    ``SINK_MYSQL``, ``SINK_OSS``, ``SINK_OTS``, ``SINK_DATAHUB``
     """
     SINK_ODPS = 'sink_odps'
     SINK_ADS = 'sink_ads'
@@ -45,15 +45,17 @@ class ConnectorType(Enum):
     SINK_MYSQL = 'sink_mysql'
     SINK_OSS = 'sink_oss'
     SINK_OTS = 'sink_ots'
+    SINK_DATAHUB = 'sink_datahub'
 
 
 class ConnectorState(Enum):
     """
-    ConnectorState enum class, there are: ``CONNECTOR_CREATED``, ``CONNECTOR_RUNNING``, ``CONNECTOR_PAUSED``
+    ConnectorState enum class, there are: ``CONNECTOR_RUNNING``, ``CONNECTOR_STOPPED``
     """
-    CONNECTOR_CREATED = 'CONNECTOR_CREATED'
+    CONNECTOR_CREATED = 'CONNECTOR_CREATED'  # deprecated
+    CONNECTOR_PAUSED = 'CONNECTOR_PAUSED'  # deprecated
     CONNECTOR_RUNNING = 'CONNECTOR_RUNNING'
-    CONNECTOR_PAUSED = 'CONNECTOR_PAUSED'
+    CONNECTOR_STOPPED = 'CONNECTOR_STOPPED'
 
 
 class PartitionMode(Enum):
@@ -73,6 +75,14 @@ class AuthMode(Enum):
     STS = 'sts'
 
 
+class WriteMode(Enum):
+    """
+    WriteMode enum class, there are: ``put``, ``update``
+    """
+    PUT = 'PUT'
+    UPDATE = 'UPDATE'
+
+
 class ConnectorShardStatus(Enum):
     """
     ConnectorShardStatus enum class, there are: ``CONTEXT_PLANNED``, ``CONTEXT_EXECUTING``, ``CONTEXT_HANG``, \
@@ -84,6 +94,132 @@ class ConnectorShardStatus(Enum):
     CONTEXT_PAUSED = 'CONTEXT_PAUSED'
     CONTEXT_FINISHED = 'CONTEXT_FINISHED'
     CONTEXT_DELETED = 'CONTEXT_DELETED'
+
+
+class ShardStatusEntry(object):
+    """
+    Connector shard status
+
+    Members:
+        current_sequence (:class:`int`): current sequence
+
+        current_timestamp (:class:`int`) current timestamp
+
+        done_time (:class:`int`) done timestamp
+
+        last_error_message (:class:`str`): last error message
+
+        state (:class:`datahub.models.connector.ConnectorShardStatus`): state
+
+        update_time (:class:`int`): update time
+
+        discard_count (:class:`int`): discard count
+
+        worker_addr (:class:`str`): worker address
+    """
+
+    __slots__ = ('_current_sequence', '_current_timestamp', '_done_time', '_last_error_message',
+                 '_state', '_update_time', '_discard_count', '_worker_addr')
+
+    def __init__(self, current_sequence, current_timestamp, done_time, last_error_message, state,
+                 update_time, discard_count, worker_addr):
+        self._current_sequence = current_sequence
+        self._current_timestamp = current_timestamp
+        self._done_time = done_time
+        self._last_error_message = last_error_message
+        self._state = state
+        self._update_time = update_time
+        self._discard_count = discard_count
+        self._worker_addr = worker_addr
+
+    @property
+    def current_sequence(self):
+        return self._current_sequence
+
+    @current_sequence.setter
+    def current_sequence(self, value):
+        self._current_sequence = value
+
+    @property
+    def current_timestamp(self):
+        return self._current_timestamp
+
+    @current_timestamp.setter
+    def current_timestamp(self, value):
+        self._current_timestamp = value
+
+    @property
+    def done_time(self):
+        return self._done_time
+
+    @done_time.setter
+    def done_time(self, value):
+        self._done_time = value
+
+    @property
+    def last_error_message(self):
+        return self._last_error_message
+
+    @last_error_message.setter
+    def last_error_message(self, value):
+        self._last_error_message = value
+
+    @property
+    def state(self):
+        return self._state
+
+    @state.setter
+    def state(self, value):
+        self._state = value
+
+    @property
+    def update_time(self):
+        return self._update_time
+
+    @update_time.setter
+    def update_time(self, value):
+        self._update_time = value
+
+    @property
+    def discard_count(self):
+        return self._discard_count
+
+    @discard_count.setter
+    def discard_count(self, value):
+        self._discard_count = value
+
+    @property
+    def worker_addr(self):
+        return self._worker_addr
+
+    @worker_addr.setter
+    def worker_addr(self, value):
+        self._worker_addr = value
+
+    @classmethod
+    def from_dict(cls, dict_):
+        current_sequence = dict_.get('CurrentSequence', -1)
+        current_timestamp = dict_.get('CurrentTimestamp', -1)
+        done_time = dict_.get('DoneTime', -1)
+        last_error_message = dict_.get('LastErrorMessage', '')
+        state = ConnectorShardStatus(dict_['State'])
+        update_time = dict_.get('UpdateTime', -1)
+        discard_count = dict_.get('DiscardCount', 0)
+        worker_addr = dict_.get('WorkerAddress', '')
+        return cls(current_sequence, current_timestamp, done_time, last_error_message, state, update_time,
+                   discard_count, worker_addr)
+
+    def to_json(self):
+        return {
+            'CurrentSequence': self._current_sequence,
+            'CurrentTimestamp': self._current_timestamp,
+            'DoneTime': self._done_time,
+            'LastErrorMessage': self._last_error_message,
+            'State': self._state.value,
+            'UpdateTime': self._update_time,
+            'DiscardCount': self._discard_count,
+            'WorkerAddress': self._worker_addr
+        }
 
 
 class ConnectorOffset(object):
@@ -165,7 +301,9 @@ class OdpsConnectorConfig(ConnectorConfig):
                  '_access_key', '_partition_mode', '_time_range', '_partition_config')
 
     def __init__(self, project_name, table_name, odps_endpoint, tunnel_endpoint,
-                 access_id, access_key, partition_mode, time_range, partition_config):
+                 access_id, access_key, partition_mode, time_range, partition_config=None):
+        if partition_config is None:
+            partition_config = {}
         self._project_name = project_name
         self._table_name = table_name
         self._odps_endpoint = odps_endpoint
@@ -295,21 +433,18 @@ class DatabaseConnectorConfig(ConnectorConfig):
 
         table (:class:`str`): table
 
-        max_commit_size (:class:`int`): max commit size (KB)
-
         ignore (:class:`bool`): ignore insert error
     """
 
-    __slots__ = ('_host', '_port', '_database', '_user', '_password', '_table', '_max_commit_size', '_ignore')
+    __slots__ = ('_host', '_port', '_database', '_user', '_password', '_table', '_ignore')
 
-    def __init__(self, host, port, database, user, password, table, max_commit_size, ignore):
+    def __init__(self, host, port, database, user, password, table, ignore):
         self._host = host
         self._port = port
         self._database = database
         self._user = user
         self._password = password
         self._table = table
-        self._max_commit_size = max_commit_size
         self._ignore = ignore
 
     @property
@@ -361,14 +496,6 @@ class DatabaseConnectorConfig(ConnectorConfig):
         self._table = value
 
     @property
-    def max_commit_size(self):
-        return self._max_commit_size
-
-    @max_commit_size.setter
-    def max_commit_size(self, value):
-        self._max_commit_size = value
-
-    @property
     def ignore(self):
         return self._ignore
 
@@ -386,8 +513,6 @@ class DatabaseConnectorConfig(ConnectorConfig):
             "Password": self._password,
             "Table": self._table,
         }
-        if self._max_commit_size >= 0:
-            data["MaxCommitSize"] = to_str(self._max_commit_size)
         return data
 
     @classmethod
@@ -398,10 +523,9 @@ class DatabaseConnectorConfig(ConnectorConfig):
         user = dict_.get('User', '')
         password = dict_.get('Password', '')
         table = dict_.get('Table', '')
-        max_commit_size = long(dict_.get('MaxCommitSize', '-1'))
         ignore = bool(dict_.get('Ignore', 'True'))
 
-        return cls(host, port, database, user, password, table, max_commit_size, ignore)
+        return cls(host, port, database, user, password, table, ignore)
 
 
 class EsConnectorConfig(ConnectorConfig):
@@ -421,22 +545,19 @@ class EsConnectorConfig(ConnectorConfig):
 
         type_fields (:class:`list`): type fields
 
-        max_commit_size (:class:`int`): max commit size
-
         proxy_mode (:class:`bool`): proxy mode
     """
 
     __slots__ = ('_index', '_endpoint', '_user', '_password', '_id_fields',
-                 '_type_fields', '_max_commit_size', '_proxy_mode')
+                 '_type_fields', '_proxy_mode')
 
-    def __init__(self, index, endpoint, user, password, id_fields, type_fields, max_commit_size, proxy_mode):
+    def __init__(self, index, endpoint, user, password, id_fields, type_fields, proxy_mode):
         self._index = index
         self._endpoint = endpoint
         self._user = user
         self._password = password
         self._id_fields = id_fields
         self._type_fields = type_fields
-        self._max_commit_size = max_commit_size
         self._proxy_mode = proxy_mode
 
     @property
@@ -488,14 +609,6 @@ class EsConnectorConfig(ConnectorConfig):
         self._type_fields = value
 
     @property
-    def max_commit_size(self):
-        return self._max_commit_size
-
-    @max_commit_size.setter
-    def max_commit_size(self, value):
-        self._max_commit_size = value
-
-    @property
     def proxy_mode(self):
         return self._proxy_mode
 
@@ -513,8 +626,6 @@ class EsConnectorConfig(ConnectorConfig):
             "TypeFields": self._type_fields,
             "ProxyMode": bool_to_str(self._proxy_mode)
         }
-        if self._max_commit_size >= 0:
-            data["MaxCommitSize"] = to_str(self._max_commit_size)
         return data
 
     @classmethod
@@ -523,12 +634,11 @@ class EsConnectorConfig(ConnectorConfig):
         endpoint = dict_.get('Endpoint', '')
         user = dict_.get('User', '')
         password = dict_.get('Password', '')
-        id_fields = dict_.get('IDFields', '')
-        type_fields = dict_.get('TypeFields', '')
-        max_commit_size = long(dict_.get('MaxCommitSize', '-1'))
+        id_fields = json.loads(dict_.get('IDFields', ''))
+        type_fields = json.loads(dict_.get('TypeFields', ''))
         proxy_mode = bool(dict_.get('ProxyMode', 'False'))
 
-        return cls(index, endpoint, user, password, id_fields, type_fields, max_commit_size, proxy_mode)
+        return cls(index, endpoint, user, password, id_fields, type_fields, proxy_mode)
 
 
 class FcConnectorConfig(ConnectorConfig):
@@ -542,14 +652,6 @@ class FcConnectorConfig(ConnectorConfig):
 
         func (:class:`str`): function
 
-        invocation_role (:class:`str`): invocation role
-
-        batch_size (:class:`int`): batch size
-
-        start_position (:class:`str`): start position
-
-        start_timestamp (:class:`int`): start timestamp
-
         auth_mode (:class:`datahub.models.connector.AuthMode`): auth mode
 
         access_id (:class:`str`): access id
@@ -557,18 +659,12 @@ class FcConnectorConfig(ConnectorConfig):
         access_key (:class:`str`): access key
     """
 
-    __slots__ = ('_endpoint', '_service', '_func', '_invocation_role', '_batch_size',
-                 '_start_position', '_start_timestamp', '_auth_mode', '_access_id', '_access_key')
+    __slots__ = ('_endpoint', '_service', '_func', '_auth_mode', '_access_id', '_access_key')
 
-    def __init__(self, endpoint, service, func, invocation_role, batch_size,
-                 auth_mode, start_position, start_timestamp=0, access_id='', access_key=''):
+    def __init__(self, endpoint, service, func, auth_mode, access_id='', access_key=''):
         self._endpoint = endpoint
         self._service = service
         self._func = func
-        self._invocation_role = invocation_role
-        self._batch_size = batch_size
-        self._start_position = start_position
-        self._start_timestamp = start_timestamp
         self._auth_mode = auth_mode
         self._access_id = access_id
         self._access_key = access_key
@@ -596,38 +692,6 @@ class FcConnectorConfig(ConnectorConfig):
     @func.setter
     def func(self, value):
         self._func = value
-
-    @property
-    def invocation_role(self):
-        return self._invocation_role
-
-    @invocation_role.setter
-    def invocation_role(self, value):
-        self._invocation_role = value
-
-    @property
-    def batch_size(self):
-        return self._batch_size
-
-    @batch_size.setter
-    def batch_size(self, value):
-        self._batch_size = value
-
-    @property
-    def start_position(self):
-        return self._start_position
-
-    @start_position.setter
-    def start_position(self, value):
-        self._start_position = value
-
-    @property
-    def start_timestamp(self):
-        return self._start_timestamp
-
-    @start_timestamp.setter
-    def start_timestamp(self, value):
-        self._start_timestamp = value
 
     @property
     def auth_mode(self):
@@ -658,17 +722,11 @@ class FcConnectorConfig(ConnectorConfig):
             "Endpoint": self._endpoint,
             "Service": self._service,
             "Function": self._func,
-            "BatchSize": self._batch_size,
-            "StartPosition": self._start_position,
             "AuthMode": self._auth_mode.value
         }
-        if self._start_position == 'SYSTEM_TIME' and self._start_timestamp >= 0:
-            data["StartTimestamp"] = self._start_timestamp
         if self._auth_mode == AuthMode.AK and self.access_id and self.access_key:
             data["AccessId"] = self.access_id
             data["AccessKey"] = self.access_key
-        elif self._auth_mode == AuthMode.STS and self._invocation_role:
-            data["InvocationRole"] = self._invocation_role
         return data
 
     @classmethod
@@ -676,16 +734,11 @@ class FcConnectorConfig(ConnectorConfig):
         endpoint = dict_.get('Endpoint', '')
         service = dict_.get('Service', '')
         func = dict_.get('Function', '')
-        invocation_role = dict_.get('InvocationRole', '')
-        batch_size = int(dict_.get('BatchSize', '-1'))
-        start_position = dict_.get('StartPosition', '')
-        start_timestamp = long(dict_.get('StartTimestamp', '-1'))
         auth_mode = AuthMode(dict_.get('AuthMode', 'sts'))
         access_id = dict_.get('AccessId', '')
         access_key = dict_.get('AccessKey', '')
 
-        return cls(endpoint, service, func, invocation_role, batch_size, auth_mode,
-                   start_position, start_timestamp, access_id, access_key)
+        return cls(endpoint, service, func, auth_mode, access_id, access_key)
 
 
 class OssConnectorConfig(ConnectorConfig):
@@ -713,7 +766,7 @@ class OssConnectorConfig(ConnectorConfig):
     __slots__ = (
         '_endpoint', '_bucket', '_prefix', '_time_format', '_time_range', '_auth_mode', '_access_id', '_access_key')
 
-    def __init__(self, endpoint, bucket, prefix, time_format, time_range, auth_mode, access_id, access_key):
+    def __init__(self, endpoint, bucket, prefix, time_format, time_range, auth_mode, access_id='', access_key=''):
         self._endpoint = endpoint
         self._bucket = bucket
         self._prefix = prefix
@@ -831,17 +884,20 @@ class OtsConnectorConfig(ConnectorConfig):
         access_id (:class:`str`): access id
 
         access_key (:class:`str`): access key
+
+        write_mode (:class:`datahub.models.connector.WriteMode`): write mode
     """
 
-    __slots__ = ('_endpoint', '_instance', '_table', '_auth_mode', '_access_id', '_access_key')
+    __slots__ = ('_endpoint', '_instance', '_table', '_auth_mode', '_access_id', '_access_key', '_write_mode')
 
-    def __init__(self, endpoint, instance, table, auth_mode, access_id, access_key):
+    def __init__(self, endpoint, instance, table, auth_mode, access_id='', access_key='', write_mode=WriteMode.PUT):
         self._endpoint = endpoint
         self._instance = instance
         self._table = table
         self._auth_mode = auth_mode
         self._access_id = access_id
         self._access_key = access_key
+        self._write_mode = write_mode
 
     @property
     def endpoint(self):
@@ -891,12 +947,21 @@ class OtsConnectorConfig(ConnectorConfig):
     def access_key(self, value):
         self._access_key = value
 
+    @property
+    def write_mode(self):
+        return self._write_mode
+
+    @write_mode.setter
+    def write_mode(self, value):
+        self._write_mode = value
+
     def to_json(self):
         data = {
             "Endpoint": self._endpoint,
             "InstanceName": self._instance,
             "TableName": self._table,
-            "AuthMode": self._auth_mode.value
+            "AuthMode": self._auth_mode.value,
+            "WriteMode": self._write_mode.value
         }
         if self._auth_mode == AuthMode.AK and self.access_id and self.access_key:
             data["AccessId"] = self.access_id
@@ -911,8 +976,109 @@ class OtsConnectorConfig(ConnectorConfig):
         auth_mode = AuthMode(dict_.get('AuthMode', 'sts'))
         access_id = dict_.get('AccessId', '')
         access_key = dict_.get('AccessKey', '')
+        write_mode = WriteMode(dict_.get('WriteMode', 'PUT'))
 
-        return cls(endpoint, instance, table, auth_mode, access_id, access_key)
+        return cls(endpoint, instance, table, auth_mode, access_id, access_key, write_mode)
+
+
+class DataHubConnectorConfig(ConnectorConfig):
+    """
+    Connector config for DataHub
+
+    Members:
+        endpoint (:class:`str`): endpoint
+
+        project (:class:`str`): project
+
+        topic (:class:`str`): topic
+
+        auth_mode (:class:`datahub.models.connector.AuthMode`): auth mode
+
+        access_id (:class:`str`): access id
+
+        access_key (:class:`str`): access key
+    """
+
+    __slots__ = ('_endpoint', '_project', '_topic', '_auth_mode', '_access_id', '_access_key')
+
+    def __init__(self, endpoint, project, topic, auth_mode, access_id='', access_key=''):
+        self._endpoint = endpoint
+        self._project = project
+        self._topic = topic
+        self._auth_mode = auth_mode
+        self._access_id = access_id
+        self._access_key = access_key
+
+    @property
+    def endpoint(self):
+        return self._endpoint
+
+    @endpoint.setter
+    def endpoint(self, value):
+        self._endpoint = value
+
+    @property
+    def project(self):
+        return self._project
+
+    @project.setter
+    def project(self, value):
+        self._project = value
+
+    @property
+    def topic(self):
+        return self._topic
+
+    @topic.setter
+    def topic(self, value):
+        self._topic = value
+
+    @property
+    def auth_mode(self):
+        return self._auth_mode
+
+    @auth_mode.setter
+    def auth_mode(self, value):
+        self._auth_mode = value
+
+    @property
+    def access_id(self):
+        return self._access_id
+
+    @access_id.setter
+    def access_id(self, value):
+        self._access_id = value
+
+    @property
+    def access_key(self):
+        return self._access_key
+
+    @access_key.setter
+    def access_key(self, value):
+        self._access_key = value
+
+    def to_json(self):
+        data = {
+            "Endpoint": self._endpoint,
+            "Project": self._project,
+            "Topic": self._topic,
+            "AuthMode": self._auth_mode.value
+        }
+        if self._auth_mode == AuthMode.AK and self.access_id and self.access_key:
+            data["AccessId"] = self.access_id
+            data["AccessKey"] = self.access_key
+        return data
+
+    @classmethod
+    def from_dict(cls, dict_):
+        endpoint = dict_.get('Endpoint', '')
+        project = dict_.get('Project', '')
+        topic = dict_.get('Topic', '')
+        auth_mode = AuthMode(dict_.get('AuthMode', 'sts'))
+        access_id = dict_.get('AccessId', '')
+        access_key = dict_.get('AccessKey', '')
+
+        return cls(endpoint, project, topic, auth_mode, access_id, access_key)
 
 
 connector_config_dict = {
@@ -922,7 +1088,8 @@ connector_config_dict = {
     ConnectorType.SINK_FC: FcConnectorConfig,
     ConnectorType.SINK_MYSQL: DatabaseConnectorConfig,
     ConnectorType.SINK_OSS: OssConnectorConfig,
-    ConnectorType.SINK_OTS: OtsConnectorConfig
+    ConnectorType.SINK_OTS: OtsConnectorConfig,
+    ConnectorType.SINK_DATAHUB: DataHubConnectorConfig
 }
 
 

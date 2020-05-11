@@ -17,52 +17,46 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import json
-import os
+from httmock import HTTMock
+import sys
 
-from httmock import HTTMock, urlmatch, response
-
+sys.path.append('./')
 from datahub import DataHub
 from datahub.exceptions import InvalidParameterException, ResourceNotFoundException, ResourceExistException
-
-_TESTS_PATH = os.path.abspath(os.path.dirname(__file__))
-_FIXTURE_PATH = os.path.join(_TESTS_PATH, '../fixtures')
+from .unittest_util import gen_mock_api
 
 dh = DataHub('access_id', 'access_key', 'http://endpoint')
-
-
-@urlmatch(netloc=r'(.*\.)?endpoint')
-def datahub_api_mock(url, request):
-    path = url.path.replace('/', '.')[1:]
-    res_file = os.path.join(_FIXTURE_PATH, '%s.json' % path)
-    status_code = 200
-    content = {
-    }
-    headers = {
-        'Content-Type': 'application/json',
-        'x-datahub-request-id': 0
-    }
-    try:
-        with open(res_file, 'rb') as f:
-            content = json.loads(f.read().decode('utf-8'))
-            if 'ErrorCode' in content:
-                status_code = 500
-    except (IOError, ValueError) as e:
-        content['ErrorMessage'] = 'Loads fixture %s failed, error: %s' % (res_file, e)
-    return response(status_code, content, headers, request=request)
 
 
 class TestProject:
 
     def test_list_project(self):
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'GET'
+            assert request.url == 'http://endpoint/projects'
+
+        with HTTMock(gen_mock_api(check)):
             result = dh.list_project()
             print(result)
             assert 'project_name_1' in result.project_names
 
     def test_create_project_success(self):
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/valid_name'
+            assert request.body == '{"Comment": "comment"}'
+
+        with HTTMock(gen_mock_api(check)):
             dh.create_project('valid_name', 'comment')
+
+    def test_update_project_success(self):
+        def check(request):
+            assert request.method == 'PUT'
+            assert request.url == 'http://endpoint/projects/valid_name'
+            assert request.body == '{"Comment": "new_comment"}'
+
+        with HTTMock(gen_mock_api(check)):
+            dh.update_project('valid_name', 'new_comment')
 
     def test_create_project_with_invalid_project_name(self):
         invalid_project_names = [None, "", "1invalid", "_invalid", "!invalid", "in",
@@ -78,7 +72,12 @@ class TestProject:
 
     def test_get_project_success(self):
         project_name = 'success'
-        with HTTMock(datahub_api_mock):
+
+        def check(request):
+            assert request.method == 'GET'
+            assert request.url == 'http://endpoint/projects/success'
+
+        with HTTMock(gen_mock_api(check)):
             get_result = dh.get_project(project_name)
             print(get_result)
 
@@ -90,7 +89,11 @@ class TestProject:
     def test_get_project_already_existed(self):
         project_name = 'existed'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'GET'
+                assert request.url == 'http://endpoint/projects/existed'
+
+            with HTTMock(gen_mock_api(check)):
                 get_result = dh.get_project(project_name)
         except ResourceExistException:
             pass
@@ -100,7 +103,11 @@ class TestProject:
     def test_get_project_with_unexisted_project_name(self):
         project_name = 'unexisted'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'GET'
+                assert request.url == 'http://endpoint/projects/unexisted'
+
+            with HTTMock(gen_mock_api(check)):
                 get_result = dh.get_project(project_name)
         except ResourceNotFoundException:
             pass
@@ -117,13 +124,21 @@ class TestProject:
             raise Exception('get success with empty project name!')
 
     def test_delete_project_success(self):
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'DELETE'
+            assert request.url == 'http://endpoint/projects/valid_name'
+
+        with HTTMock(gen_mock_api(check)):
             dh.delete_project('valid_name')
 
     def test_delete_project_with_unexisted_project_name(self):
         project_name = 'unexisted'
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'DELETE'
+                assert request.url == 'http://endpoint/projects/unexisted'
+
+            with HTTMock(gen_mock_api(check)):
                 dh.delete_project(project_name)
         except ResourceNotFoundException:
             pass
@@ -144,6 +159,7 @@ if __name__ == '__main__':
     test = TestProject()
     test.test_list_project()
     test.test_create_project_success()
+    test.test_update_project_success()
     test.test_get_project_already_existed()
     test.test_create_project_with_invalid_project_name()
     test.test_get_project_success()

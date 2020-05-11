@@ -35,7 +35,7 @@ project操作
 
 .. code-block:: python
 
-    projects_result = dh.list_project(project_name)
+    projects_result = dh.list_project()
 
 list_project返回的结果是ListProjectResult对象，其中包含成员project_names，是一个包含Project名字的list。
 

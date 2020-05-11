@@ -16,40 +16,17 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
 import json
-import os
+import sys
 
-from httmock import HTTMock, urlmatch, response
+sys.path.append('./')
+from httmock import HTTMock
 
 from datahub import DataHub
 from datahub.exceptions import InvalidParameterException, ResourceNotFoundException
-
-_TESTS_PATH = os.path.abspath(os.path.dirname(__file__))
-_FIXTURE_PATH = os.path.join(_TESTS_PATH, '../fixtures')
+from .unittest_util import gen_mock_api
 
 dh = DataHub('access_id', 'access_key', 'http://endpoint')
-
-
-@urlmatch(netloc=r'(.*\.)?endpoint')
-def datahub_api_mock(url, request):
-    path = url.path.replace('/', '.')[1:]
-    res_file = os.path.join(_FIXTURE_PATH, '%s.json' % path)
-    status_code = 200
-    content = {
-    }
-    headers = {
-        'Content-Type': 'application/json',
-        'x-datahub-request-id': 0
-    }
-    try:
-        with open(res_file, 'rb') as f:
-            content = json.loads(f.read().decode('utf-8'))
-            if 'ErrorCode' in content:
-                status_code = 500
-    except (IOError, ValueError) as e:
-        content['ErrorMessage'] = 'Loads fixture %s failed, error: %s' % (res_file, e)
-    return response(status_code, content, headers, request=request)
 
 
 class TestMeter:
@@ -59,7 +36,13 @@ class TestMeter:
         topic_name = 'success'
         shard_id = '0'
 
-        with HTTMock(datahub_api_mock):
+        def check(request):
+            assert request.method == 'POST'
+            assert request.url == 'http://endpoint/projects/meter/topics/success/shards/0'
+            content = json.loads(request.body)
+            assert content['Action'] == 'meter'
+
+        with HTTMock(gen_mock_api(check)):
             meter_result = dh.get_metering_info(project_name, topic_name, shard_id)
         print(meter_result)
         assert meter_result.active_time == 1590206
@@ -107,7 +90,13 @@ class TestMeter:
         shard_id = '0'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/unexisted/topics/valid/shards/0'
+                content = json.loads(request.body)
+                assert content['Action'] == 'meter'
+
+            with HTTMock(gen_mock_api(check)):
                 meter_result = dh.get_metering_info(project_name, topic_name, shard_id)
         except ResourceNotFoundException:
             pass
@@ -120,7 +109,13 @@ class TestMeter:
         shard_id = '0'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/unexisted/shards/0'
+                content = json.loads(request.body)
+                assert content['Action'] == 'meter'
+
+            with HTTMock(gen_mock_api(check)):
                 meter_result = dh.get_metering_info(project_name, topic_name, shard_id)
         except ResourceNotFoundException:
             pass
@@ -133,7 +128,13 @@ class TestMeter:
         shard_id = '0'
 
         try:
-            with HTTMock(datahub_api_mock):
+            def check(request):
+                assert request.method == 'POST'
+                assert request.url == 'http://endpoint/projects/valid/topics/valid/shards/0'
+                content = json.loads(request.body)
+                assert content['Action'] == 'meter'
+
+            with HTTMock(gen_mock_api(check)):
                 meter_result = dh.get_metering_info(project_name, topic_name, shard_id)
         except ResourceNotFoundException:
             pass

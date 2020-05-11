@@ -76,7 +76,7 @@ def clean_subscription(datahub_client, project_name, topic_name):
 class TestOffset:
 
     def test_init_and_get_subscription_offset(self):
-        project_name = "offset_test_p%d_0" % int(time.time())
+        project_name = "offset_test_p"
         topic_name = "offset_test_t%d_0" % int(time.time())
 
         shard_count = 3
@@ -123,7 +123,7 @@ class TestOffset:
             dh.delete_project(project_name)
 
     def test_get_subscription_offset(self):
-        project_name = "offset_test_p%d_1" % int(time.time())
+        project_name = "offset_test_p"
         topic_name = "offset_test_t%d_1" % int(time.time())
 
         shard_count = 3
@@ -181,7 +181,7 @@ class TestOffset:
             dh.delete_project(project_name)
 
     def test_update_subscription_offset(self):
-        project_name = "offset_test_p%d_2" % int(time.time())
+        project_name = "offset_test_p"
         topic_name = "offset_test_t%d_2" % int(time.time())
 
         shard_count = 3
@@ -241,7 +241,7 @@ class TestOffset:
             dh.delete_project(project_name)
 
     def test_reset_subscription_offset(self):
-        project_name = "offset_test_p%d_3" % int(time.time())
+        project_name = "offset_test_p"
         topic_name = "offset_test_t%d_3" % int(time.time())
 
         shard_count = 3

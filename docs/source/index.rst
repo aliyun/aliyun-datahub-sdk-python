@@ -16,7 +16,8 @@ Requirements:
    * enum34 (>=1.1.5 for python_version < '3.4')
    * crcmod (>=1.7)
    * lz4 (>=2.0.0)
-   * cprotobuf (>=0.1.9)
+   * cprotobuf (==0.1.9)
+   * funcsigs (>=1.0.2)
 
 .. toctree::
    :maxdepth: 1

@@ -55,7 +55,8 @@ Dependencies
 -  enum34 (>=1.1.5 for python_version < '3.4')
 -  crcmod (>=1.7)
 -  lz4 (>=2.0.0)
--  cprotobuf (>=0.1.9)
+-  cprotobuf (==0.1.9)
+-  funcsigs (>=1.0.2)
 
 Run Tests
 ---------
@@ -112,7 +113,7 @@ Usage
     shard_count = 3
     life_cycle = 7
     comment = 'blob topic'
-    dh.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, comment)
+    dh.create_blob_topic(project_name, topic_name, shard_count, life_cycle, comment)
 
     # ============================= get topic =============================
 
@@ -200,8 +201,8 @@ Release
 Update `changelog <https://github.com/aliyun/aliyun-datahub-sdk-python/tree/master/changelog.rst>`__, then use `bumpversion <https://github.com/peritus/bumpversion>`__ to update version:
 
 1. bugfix: ``bumpversion patch``
-2. small feature：``bumpversion minor``
-3. breaking change：``bumpversion major``
+2. small feature: ``bumpversion minor``
+3. breaking change: ``bumpversion major``
 
 Contributing
 ------------
@@ -226,3 +227,4 @@ Licensed under the `Apache License
 .. |License| image:: https://img.shields.io/pypi/l/pydatahub.svg?style=flat-square
    :target: https://github.com/aliyun/aliyun-datahub-sdk-python/blob/master/LICENSE
 .. |Implementation| image:: https://img.shields.io/pypi/implementation/pydatahub.svg?style=flat-square
+

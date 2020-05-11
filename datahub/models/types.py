@@ -62,20 +62,15 @@ class DataType(object):
                 value, data_type, self))
 
     @abc.abstractmethod
-    def cast_type(self):
-        pass
+    def do_cast(self, value, data_type):
+        raise NotImplementedError
 
     def cast_value(self, value, data_type):
         self._can_cast_or_throw(value, data_type)
-        builtin_type = self.cast_type()
         try:
-            if callable(builtin_type):
-                ret = builtin_type(value)
-            else:
-                raise InvalidParameterException("builtin type not callable")
+            return self.do_cast(value, data_type)
         except ValueError as e:
             raise InvalidParameterException(e)
-        return ret
 
 
 # Bigint
@@ -95,10 +90,10 @@ class Bigint(DataType):
             return True
         raise InvalidParameterException('InvalidData: Bigint(%s) out of range' % val)
 
-    def cast_type(self):
+    def do_cast(self, value, data_type):
         if six.PY2:
-            return long
-        return int
+            return long(value)
+        return int(value)
 
 
 # Double
@@ -108,8 +103,8 @@ class Double(DataType):
             return True
         return super(Double, self).can_implicit_cast(other)
 
-    def cast_type(self):
-        return float
+    def do_cast(self, value, data_type):
+        return float(value)
 
 
 # Decimal
@@ -119,8 +114,8 @@ class Decimal(DataType):
             return True
         return super(Decimal, self).can_implicit_cast(other)
 
-    def cast_type(self):
-        return decimal.Decimal
+    def do_cast(self, value, data_type):
+        return decimal.Decimal(value)
 
 
 # String
@@ -139,8 +134,8 @@ class String(DataType):
             return True
         raise InvalidParameterException("InvalidData: Length of string(%s) is more than 1M.'" % val)
 
-    def cast_type(self):
-        return utils.to_text
+    def do_cast(self, value, data_type):
+        return utils.to_text(value)
 
 
 # Timestamp
@@ -161,10 +156,10 @@ class Timestamp(DataType):
             return True
         raise InvalidParameterException('InvalidData: Timestamp(%s) out of range' % val)
 
-    def cast_type(self):
+    def do_cast(self, value, data_type):
         if six.PY2:
-            return long
-        return int
+            return long(value)
+        return int(value)
 
 
 # Boolean
@@ -175,8 +170,13 @@ class Boolean(DataType):
             return True
         return super(Boolean, self).can_implicit_cast(other)
 
-    def cast_type(self):
-        return bool
+    def do_cast(self, value, data_type):
+        if isinstance(data_type, String):
+            if 'true' == value.lower():
+                return True
+            elif 'false' == value.lower():
+                return False
+        raise ValueError('can not cast to [%s] bool' % value)
 
 
 #####################################################################
