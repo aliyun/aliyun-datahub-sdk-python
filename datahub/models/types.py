@@ -120,7 +120,7 @@ class Decimal(DataType):
 
 # String
 class String(DataType):
-    _max_length = 1 * 1024 * 1024  # 1M
+    _max_length = 2 * 1024 * 1024  # 2M
 
     def can_implicit_cast(self, other):
         if isinstance(other, (Bigint, Double, Timestamp)):
