@@ -17,6 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 import base64
+import decimal
 import json
 import os
 import sys
@@ -30,7 +31,7 @@ from datahub.exceptions import ResourceNotFoundException, InvalidOperationExcept
     InvalidParameterException, LimitExceededException
 from datahub.models import RecordSchema, FieldType, BlobRecord, TupleRecord
 from datahub.proto.datahub_record_proto_pb import PutRecordsRequest, GetRecordsRequest
-from datahub.utils import unwrap_pb_frame
+from datahub.utils import unwrap_pb_frame, to_binary
 from .unittest_util import gen_mock_api, gen_pb_mock_api, _TESTS_PATH
 
 dh = DataHub('access_id', 'access_key', 'http://endpoint', enable_pb=False)
@@ -99,18 +100,20 @@ class TestRecord:
         project_name = 'put'
         topic_name = 'success'
         records = []
-        data = None
+        data = []
         with open(os.path.join(_TESTS_PATH, '../resources/datahub.png'), 'rb') as f:
-            data = f.read()
-        record0 = BlobRecord(blob_data=data)
+            data.append(f.read())
+        record0 = BlobRecord(blob_data=data[0])
         record0.shard_id = '0'
         records.append(record0)
 
-        record1 = BlobRecord(blob_data=data)
+        data.append(b'abc')
+        record1 = BlobRecord(blob_data=data[1])
         record1.hash_key = '4FFFFFFFFFFFFFFD7FFFFFFFFFFFFFFD'
         records.append(record1)
 
-        record2 = BlobRecord(blob_data=data)
+        data.append('abc')
+        record2 = BlobRecord(blob_data=data[2])
         record2.partition_key = 'TestPartitionKey'
         records.append(record2)
 
@@ -120,8 +123,10 @@ class TestRecord:
             crc, compute_crc, pb_str = unwrap_pb_frame(request.body)
             pb_put_record_request = PutRecordsRequest()
             pb_put_record_request.ParseFromString(pb_str)
+            i = 0
             for pb_record in pb_put_record_request.records:
-                assert pb_record.data.data[0].value == data
+                assert pb_record.data.data[0].value == to_binary(data[i])
+                i += 1
 
         with HTTMock(gen_pb_mock_api(check)):
             put_result = dh2.put_records(project_name, topic_name, records)
@@ -727,6 +732,106 @@ class TestRecord:
         else:
             raise Exception('build record success with invalid value!')
 
+    def test_set_value_out_of_range(self):
+        project_name = 'put'
+        topic_name = 'out_of_range'
+        record_schema = RecordSchema.from_lists(
+            ['tinyint_field', 'smallint_field', 'integer_field', 'bigint_field', 'string_field',
+             'float_field', 'double_field', 'bool_field', 'timestamp_field', 'decimal_field'],
+            [FieldType.TINYINT, FieldType.SMALLINT, FieldType.INTEGER, FieldType.BIGINT, FieldType.STRING,
+             FieldType.FLOAT, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP, FieldType.DECIMAL],
+            [False, True, True, True, True, True, True, True, True, True])
+
+        record = TupleRecord(schema=record_schema, values=[127, 32767, 2147483647, 9223372036854775807, 'yc1', 1.1, 10.01, True, 253402271999000000, decimal.Decimal('12.2')])
+        record = TupleRecord(schema=record_schema, values=[-128, -32768, -2147483648, -9223372036854775808, 'yc1', 1.1, 10.01, True, -62135798400000000, decimal.Decimal('12.2')])
+        try:
+            record = TupleRecord(schema=record_schema,
+                                 values=[128, 0, 0, 0, 'yc1', 10.01, True, 0, decimal.Decimal('12.2')])
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('set value out of range success!')
+
+        try:
+            record = TupleRecord(schema=record_schema,
+                                 values=[-129, 0, 0, 0, 'yc1', 10.01, True, 0, decimal.Decimal('12.2')])
+
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('set value out of range success!')
+
+        try:
+            record = TupleRecord(schema=record_schema,
+                                 values=[0, 32768, 0, 0, 'yc1', 10.01, True, 0, decimal.Decimal('12.2')])
+
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('set value out of range success!')
+
+        try:
+            record = TupleRecord(schema=record_schema,
+                                 values=[0, -32769, 0, 0, 'yc1', 10.01, True, 0, decimal.Decimal('12.2')])
+
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('set value out of range success!')
+
+        try:
+            record = TupleRecord(schema=record_schema,
+                                 values=[0, 0, 2147483648, 0, 'yc1', 10.01, True, 0, decimal.Decimal('12.2')])
+
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('set value out of range success!')
+
+        try:
+            record = TupleRecord(schema=record_schema,
+                                 values=[0, 0, -2147483649, 0, 'yc1', 10.01, True, 0, decimal.Decimal('12.2')])
+
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('set value out of range success!')
+
+        try:
+            record = TupleRecord(schema=record_schema,
+                                 values=[0, 0, 0, 9223372036854775808, 'yc1', 10.01, True, 0, decimal.Decimal('12.2')])
+
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('set value out of range success!')
+
+        try:
+            record = TupleRecord(schema=record_schema,
+                                 values=[0, 0, 0, -9223372036854775809, 'yc1', 10.01, True, 0, decimal.Decimal('12.2')])
+
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('set value out of range success!')
+
+        try:
+            record = TupleRecord(schema=record_schema,
+                                 values=[0, 0, 0, 0, 'yc1', 10.01, True, 253402271999000001, decimal.Decimal('12.2')])
+
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('set value out of range success!')
+
+        try:
+            record = TupleRecord(schema=record_schema,
+                                 values=[0, 0, 0, 0, 'yc1', 10.01, True, -62135798400000001, decimal.Decimal('12.2')])
+
+        except InvalidParameterException:
+            pass
+        else:
+            raise Exception('set value out of range success!')
 
 if __name__ == '__main__':
     test = TestRecord()
@@ -754,3 +859,4 @@ if __name__ == '__main__':
     test.test_get_blob_record_pb_success()
     test.test_put_tuple_record_pb_success()
     test.test_get_tuple_record_pb_success()
+    test.test_set_value_out_of_range()

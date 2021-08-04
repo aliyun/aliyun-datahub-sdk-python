@@ -645,7 +645,8 @@ class GetPBRecordsResult(GetRecordsResult):
             record_schema = kwargs['record_schema']
             if record_schema:
                 values = [bp_field_data.value for bp_field_data in pb_record.data.data]
-                record = TupleRecord(schema=record_schema, values=values)
+                record = TupleRecord(schema=record_schema)
+                record._set_values(values)
             else:
                 record = BlobRecord(blob_data=pb_record.data.data[0].value)
             record._attributes = {

@@ -25,21 +25,31 @@ class TestSchema:
 
     def test_build_schema_success(self):
         record_schema_0 = RecordSchema.from_lists(
-            ['bigint_field', 'string_field', 'double_field', 'bool_field', 'event_time1'],
-            [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP],
-            [False, True, True, True, True]
+            ['tinyint_field', 'smallint_field', 'integer_field', 'bigint_field', 'string_field',
+             'float_field', 'double_field', 'bool_field', 'event_time1'],
+            [FieldType.TINYINT, FieldType.SMALLINT, FieldType.INTEGER, FieldType.BIGINT, FieldType.STRING,
+             FieldType.FLOAT, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP],
+            [False, True, True, True, True, True, True, True, True]
         )
 
         record_schema_1 = RecordSchema([])
-        record_schema_1.add_field(Field('bigint_field', FieldType.BIGINT, False))
+        record_schema_1.add_field(Field('tinyint_field', FieldType.TINYINT, False))
+        record_schema_1.add_field(Field('smallint_field', FieldType.SMALLINT))
+        record_schema_1.add_field(Field('integer_field', FieldType.INTEGER))
+        record_schema_1.add_field(Field('bigint_field', FieldType.BIGINT))
         record_schema_1.add_field(Field('string_field', FieldType.STRING))
+        record_schema_1.add_field(Field('float_field', FieldType.FLOAT))
         record_schema_1.add_field(Field('double_field', FieldType.DOUBLE))
         record_schema_1.add_field(Field('bool_field', FieldType.BOOLEAN))
         record_schema_1.add_field(Field('event_time1', FieldType.TIMESTAMP))
 
         fields = []
-        fields.append(Field('bigint_field', FieldType.BIGINT, False))
+        fields.append(Field('tinyint_field', FieldType.TINYINT, False))
+        fields.append(Field('smallint_field', FieldType.SMALLINT))
+        fields.append(Field('integer_field', FieldType.INTEGER))
+        fields.append(Field('bigint_field', FieldType.BIGINT))
         fields.append(Field('string_field', FieldType.STRING))
+        fields.append(Field('float_field', FieldType.FLOAT))
         fields.append(Field('double_field', FieldType.DOUBLE))
         fields.append(Field('bool_field', FieldType.BOOLEAN))
         fields.append(Field('event_time1', FieldType.TIMESTAMP))

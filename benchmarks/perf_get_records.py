@@ -20,9 +20,8 @@
 import argparse
 import time
 
-from datahub import DataHub, RestClient
-from datahub.implement import DataHubJson
-from datahub.models import CursorType, Result, RequestParams
+from datahub import DataHub
+from datahub.models import CursorType
 
 
 class Timer(object):

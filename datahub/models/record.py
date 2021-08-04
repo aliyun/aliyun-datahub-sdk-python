@@ -191,7 +191,7 @@ class BlobRecord(Record):
     def __init__(self, blob_data=None, values=None):
         super(BlobRecord, self).__init__()
         if blob_data:
-            self._blob_data = blob_data
+            self._blob_data = to_binary(blob_data)
         elif values is not None:
             self._values = values
             self._blob_data = base64.b64decode(self._values)
@@ -260,6 +260,9 @@ class TupleRecord(Record):
 
         self._values = [None, ] * len(self._field_list)
         if values is not None:
+            if len(values) != len(self._field_list):
+                raise InvalidParameterException('The values set to records are against the schema, '
+                                                'expect len %s, got len %s' % (len(self._field_list), len(values)))
             self._set_values(values)
 
         self._name_indices = dict((field.name, index) for index, field in enumerate(self._field_list))
@@ -278,6 +281,9 @@ class TupleRecord(Record):
 
     @values.setter
     def values(self, value):
+        if len(value) != len(self._field_list):
+            raise InvalidParameterException('The values set to records are against the schema, '
+                                            'expect len %s, got len %s' % (len(self._field_list), len(value)))
         self._set_values(value)
 
     @property
@@ -336,10 +342,9 @@ class TupleRecord(Record):
         return pb_record_data
 
     def _set_values(self, values):
-        if len(values) != len(self._field_list):
-            raise InvalidParameterException('The values set to records are against the schema, '
-                                            'expect len %s, got len %s' % (len(self._field_list), len(values)))
         for index, value in enumerate(values):
+            if index >= len(self._field_list):
+                break
             self._set_value_by_index(index, value)
 
     def _set_value_by_index(self, index, value):

@@ -139,8 +139,8 @@ class DataHub(object):
         """
         return self._datahub_impl.list_topic(project_name)
 
-    @type_assert(object, str, str, int, int, str)
-    def create_blob_topic(self, project_name, topic_name, shard_count, life_cycle, comment):
+    @type_assert(object, str, str, int, int, str, bool)
+    def create_blob_topic(self, project_name, topic_name, shard_count, life_cycle, comment, extend_mode=None):
         """
         Create blob topic
 
@@ -149,15 +149,16 @@ class DataHub(object):
         :param shard_count: shard count
         :param life_cycle: life cycle
         :param comment: comment
+        :param extend_mode: use expansion method to increase shard
         :return: none
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is empty; topic_name is not valid; life_cycle is not positive; record_schema is wrong type
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if project not existed
         :raise: :class:`datahub.exceptions.ResourceExistException` if topic is already existed
         """
-        self._datahub_impl.create_blob_topic(project_name, topic_name, shard_count, life_cycle, comment)
+        self._datahub_impl.create_blob_topic(project_name, topic_name, shard_count, life_cycle, extend_mode, comment)
 
-    @type_assert(object, str, str, int, int, RecordSchema, str)
-    def create_tuple_topic(self, project_name, topic_name, shard_count, life_cycle, record_schema, comment):
+    @type_assert(object, str, str, int, int, RecordSchema, str, bool)
+    def create_tuple_topic(self, project_name, topic_name, shard_count, life_cycle, record_schema, comment, extend_mode=None):
         """
         Create tuple topic
 
@@ -168,12 +169,13 @@ class DataHub(object):
         :param record_schema: record schema for tuple record type
         :type record_schema: :class:`datahub.models.RecordSchema`
         :param comment: comment
+        :param extend_mode: use expansion method to increase shard
         :return: none
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is empty; topic_name is not valid; life_cycle is not positive; record_schema is wrong type
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if project not existed
         :raise: :class:`datahub.exceptions.ResourceExistException` if topic is already existed
         """
-        self._datahub_impl.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, record_schema, comment)
+        self._datahub_impl.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, record_schema, extend_mode, comment)
 
     @type_assert(object, str, str)
     def get_topic(self, project_name, topic_name):

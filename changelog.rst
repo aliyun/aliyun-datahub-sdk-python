@@ -1,6 +1,27 @@
 Changelog
 ================
 
+Version 2.17.2
+-----------------
+
++ support to create topic with extend mode
+
+Version 2.17.1
+-----------------
+
++ fix invalid shard status
+
+Version 2.17.0
+-----------------
+
++ fix field length longer than schema specified
+
+Version 2.16.0
+-----------------
+
++ fix python3 blob_data type error in pb mode
++ support new date type
+
 Version 2.15.2
 -----------------
 

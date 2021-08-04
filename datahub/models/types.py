@@ -73,12 +73,75 @@ class DataType(object):
             raise InvalidParameterException(e)
 
 
+# Tinyint
+class Tinyint(DataType):
+    _bounds = (-128, 127)
+
+    def can_implicit_cast(self, other):
+        if isinstance(other, (Smallint, Integer, Bigint, Float, Double, String, Timestamp)):
+            return True
+        return super(Tinyint, self).can_implicit_cast(other)
+
+    def validate_value(self, val):
+        if val is None:
+            return True
+        smallest, largest = self._bounds
+        if smallest <= val <= largest:
+            return True
+        raise InvalidParameterException('InvalidData: Tinyint(%s) out of range' % val)
+
+    def do_cast(self, value, data_type):
+        return int(value)
+
+
+# Smallint
+class Smallint(DataType):
+    _bounds = (-32768, 32767)
+
+    def can_implicit_cast(self, other):
+        if isinstance(other, (Tinyint, Integer, Bigint, Float, Double, String, Timestamp)):
+            return True
+        return super(Smallint, self).can_implicit_cast(other)
+
+    def validate_value(self, val):
+        if val is None:
+            return True
+        smallest, largest = self._bounds
+        if smallest <= val <= largest:
+            return True
+        raise InvalidParameterException('InvalidData: Smallint(%s) out of range' % val)
+
+    def do_cast(self, value, data_type):
+        return int(value)
+
+
+# Integer
+class Integer(DataType):
+    _bounds = (-2147483648, 2147483647)
+
+    def can_implicit_cast(self, other):
+        if isinstance(other, (Tinyint, Smallint, Bigint, Float, Double, String, Timestamp)):
+            return True
+        return super(Integer, self).can_implicit_cast(other)
+
+    def validate_value(self, val):
+        if val is None:
+            return True
+        smallest, largest = self._bounds
+        if smallest <= val <= largest:
+            return True
+        raise InvalidParameterException('InvalidData: Integer(%s) out of range' % val)
+
+    def do_cast(self, value, data_type):
+        return int(value)
+
+
 # Bigint
 class Bigint(DataType):
     _bounds = (-9223372036854775808, 9223372036854775807)
 
     def can_implicit_cast(self, other):
-        if isinstance(other, (Double, String, Timestamp)):
+        if isinstance(other, (Tinyint, Smallint, Integer, Float, Double, String, Timestamp)):
             return True
         return super(Bigint, self).can_implicit_cast(other)
 
@@ -96,10 +159,21 @@ class Bigint(DataType):
         return int(value)
 
 
+# Float
+class Float(DataType):
+    def can_implicit_cast(self, other):
+        if isinstance(other, (Tinyint, Smallint, Integer, Double, Bigint, String)):
+            return True
+        return super(Float, self).can_implicit_cast(other)
+
+    def do_cast(self, value, data_type):
+        return float(value)
+
+
 # Double
 class Double(DataType):
     def can_implicit_cast(self, other):
-        if isinstance(other, (Bigint, String)):
+        if isinstance(other, (Tinyint, Smallint, Integer, Float, Bigint, String)):
             return True
         return super(Double, self).can_implicit_cast(other)
 
@@ -110,7 +184,7 @@ class Double(DataType):
 # Decimal
 class Decimal(DataType):
     def can_implicit_cast(self, other):
-        if isinstance(other, (Bigint, String)):
+        if isinstance(other, (Tinyint, Smallint, Integer, Float, Double, Bigint, String)):
             return True
         return super(Decimal, self).can_implicit_cast(other)
 
@@ -120,19 +194,13 @@ class Decimal(DataType):
 
 # String
 class String(DataType):
-    _max_length = 1 * 1024 * 1024  # 1M
-
     def can_implicit_cast(self, other):
-        if isinstance(other, (Bigint, Double, Timestamp)):
+        if isinstance(other, (Tinyint, Smallint, Integer, Bigint, Float, Double, Timestamp)):
             return True
         return super(String, self).can_implicit_cast(other)
 
     def validate_value(self, val):
-        if val is None:
-            return True
-        if len(val) <= self._max_length:
-            return True
-        raise InvalidParameterException("InvalidData: Length of string(%s) is more than 1M.'" % val)
+        return True
 
     def do_cast(self, value, data_type):
         return utils.to_text(value)
@@ -180,7 +248,7 @@ class Boolean(DataType):
 
 
 #####################################################################
-# above is 5 type defined to verify field value
+# above is 10 type defined to verify field value
 #####################################################################
 
 float_builtins = (float,)
@@ -197,7 +265,11 @@ try:
 except ImportError:
     pass
 
+tinyint_type = Tinyint()
+smallint_type = Smallint()
+integer_type = Integer()
 bigint_type = Bigint()
+float_type = Float()
 double_type = Double()
 string_type = String()
 timestamp_type = Timestamp()
@@ -206,7 +278,11 @@ decimal_type = Decimal()
 
 
 _datahub_types_dict = {
+    FieldType.TINYINT: tinyint_type,
+    FieldType.SMALLINT: smallint_type,
+    FieldType.INTEGER: integer_type,
     FieldType.BIGINT: bigint_type,
+    FieldType.FLOAT: float_type,
     FieldType.DOUBLE: double_type,
     FieldType.STRING: string_type,
     FieldType.TIMESTAMP: timestamp_type,
@@ -215,7 +291,11 @@ _datahub_types_dict = {
 }
 
 _builtin_types_dict = {
+    tinyint_type: integer_builtins,
+    smallint_type: integer_builtins,
+    integer_type: integer_builtins,
     bigint_type: integer_builtins,
+    float_type: float_builtins,
     double_type: float_builtins,
     string_type: string_builtins,
     timestamp_type: integer_builtins,

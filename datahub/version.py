@@ -20,5 +20,5 @@
 """ version
 """
 
-__version__ = '2.15.0'
+__version__ = '2.17.2'
 __datahub_client_version__ = '1.1'

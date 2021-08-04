@@ -25,7 +25,7 @@ from six.moves import configparser
 
 from datahub import DataHub
 from datahub.exceptions import ResourceExistException, InvalidOperationException
-from datahub.models import RecordSchema, FieldType, Field
+from datahub.models import RecordSchema, FieldType, Field, TupleRecord, CursorType
 
 current_path = os.path.split(os.path.realpath(__file__))[0]
 root_path = os.path.join(current_path, '../..')
@@ -93,6 +93,7 @@ class TestSchema:
         record_schema_1.add_field(Field('double_field', FieldType.DOUBLE, False))
         record_schema_1.add_field(Field('bool_field', FieldType.BOOLEAN))
         record_schema_1.add_field(Field('event_time1', FieldType.TIMESTAMP))
+        record_schema_1.add_field(Field('float_field', FieldType.FLOAT))
 
         print(record_schema_0)
         print(RecordSchema())
@@ -125,6 +126,15 @@ class TestSchema:
                 assert field.name == record_schema_1.field_list[index].name
                 assert field.type == record_schema_1.field_list[index].type
                 assert field.allow_null == record_schema_1.field_list[index].allow_null
+
+            record = TupleRecord(schema=record_schema_1, values=[1, 'yc1', 10.01, True, 1455869335000000, 2.2])
+            put_result = dh.put_records_by_shard(project_name, topic_name_1, "0", [record])
+
+            tuple_cursor_result = dh.get_cursor(project_name, topic_name_1, '0', CursorType.OLDEST)
+            get_result = dh.get_tuple_records(project_name, topic_name_1, '0', record_schema_0,
+                                              tuple_cursor_result.cursor, 1)
+
+            print(get_result)
         finally:
             clean_topic(dh, project_name)
             dh.delete_project(project_name)

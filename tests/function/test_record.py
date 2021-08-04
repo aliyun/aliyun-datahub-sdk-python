@@ -91,10 +91,11 @@ class TestRecord:
         topic_name = "record_test_t%d_1" % int(time.time())
 
         record_schema = RecordSchema.from_lists(
-            ['bigint_field', 'string_field', 'double_field', 'bool_field', 'time_field', 'decimal_field'],
-            [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP,
-             FieldType.DECIMAL],
-            [False, True, True, True, True, True])
+            ['tinyint_field', 'smallint_field', 'integer_field', 'bigint_field', 'string_field',
+             'float_field', 'double_field', 'bool_field', 'timestamp_field', 'decimal_field'],
+            [FieldType.TINYINT, FieldType.SMALLINT, FieldType.INTEGER, FieldType.BIGINT, FieldType.STRING,
+             FieldType.FLOAT, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP, FieldType.DECIMAL],
+            [False, True, True, True, True, True, True, True, True, True])
 
         print(TupleRecord(schema=record_schema))
 
@@ -115,7 +116,7 @@ class TestRecord:
             # put tuple records
             failed_records = []
             record = TupleRecord(schema=record_schema,
-                                 values=[99, 'yc1', 10.01, None, 1455869335000000,
+                                 values=[1, 2, 3, 99, 'yc1', 1.1, 10.01, None, 1455869335000000,
                                          decimal.Decimal('12.2219999999999995310417943983338773250579833984375')])
 
             # write by partition key
@@ -135,12 +136,16 @@ class TestRecord:
             failed_records.extend(put_result.failed_records)
 
             record1 = TupleRecord(schema=record_schema)
-            record1.set_value('bigint_field', 2)
+            record1.set_value('tinyint_field', 1)
+            record1.set_value('smallint_field', 2)
+            record1.set_value('integer_field', 3)
+            record1.set_value('bigint_field', 4)
             record1.set_value('string_field', 'yc2')
+            record1.set_value('float_field', 1.1)
             record1.set_value('double_field', None)
-            record1.set_value(3, False)
-            record1.set_value(4, 1455869335000011)
-            record1.set_value(5, decimal.Decimal('12.2219999999999995310417943983338773250579833984375'))
+            record1.set_value(7, False)
+            record1.set_value(8, 1455869335000011)
+            record1.set_value(9, decimal.Decimal('12.2219999999999995310417943983338773250579833984375'))
             record1.attributes = {'key': 'value'}
             record1.shard_id = '0'
 
@@ -164,6 +169,17 @@ class TestRecord:
             assert record_result.records[0].sequence == record_result.start_seq
             assert record_result.records[1].sequence == record_result.start_seq + 1
             assert record_result.records[2].sequence == record_result.start_seq + 2
+            assert record_result.records[0].values[0] == 1
+            assert record_result.records[0].values[1] == 2
+            assert record_result.records[0].values[2] == 3
+            assert record_result.records[0].values[3] == 99
+            assert record_result.records[0].values[4] == 'yc1'
+            assert record_result.records[0].values[5] == 1.1
+            assert record_result.records[0].values[6] == 10.01
+            assert record_result.records[0].values[7] is None
+            assert record_result.records[0].values[8] == 1455869335000000
+            assert record_result.records[0].values[9] == decimal.Decimal('12.2219999999999995310417943983338773250579833984375')
+
         finally:
             clean_topic(dh, project_name)
             dh.delete_project(project_name)
@@ -413,10 +429,11 @@ class TestRecord:
         topic_name = "record_test_t%d_1" % int(time.time())
 
         record_schema = RecordSchema.from_lists(
-            ['bigint_field', 'string_field', 'double_field', 'bool_field', 'time_field', 'decimal_field'],
-            [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP,
-             FieldType.DECIMAL],
-            [False, True, True, True, True, True])
+            ['tinyint_field', 'smallint_field', 'integer_field', 'bigint_field', 'string_field',
+             'float_field', 'double_field', 'bool_field', 'timestamp_field', 'decimal_field'],
+            [FieldType.TINYINT, FieldType.SMALLINT, FieldType.INTEGER, FieldType.BIGINT, FieldType.STRING,
+             FieldType.FLOAT, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP, FieldType.DECIMAL],
+            [False, True, True, True, True, True, True, True, True, True])
 
         try:
             dh_pb.create_project(project_name, '')
@@ -435,7 +452,7 @@ class TestRecord:
             # put tuple records
             failed_records = []
             record = TupleRecord(schema=record_schema,
-                                 values=[99, 'yc1', 10.01, None, None,
+                                 values=[1, 2, 3, 99, 'yc1', 1.1, 10.01, True, 1455869335000000,
                                          decimal.Decimal('12.2219999999999995310417943983338773250579833984375')])
 
             # write by partition key
@@ -456,7 +473,7 @@ class TestRecord:
 
             # test failed records
             record1 = TupleRecord(schema=record_schema)
-            record1.values = [99, 'yc1', 10.01, True, 1455869335000000,
+            record1.values = [1, 2, 3, 99, 'yc1', 1.1, 10.01, None, None,
                               decimal.Decimal('12.2219999999999995310417943983338773250579833984375')]
             record1.shard_id = '-1'
             record1.put_attribute('a', 'b')
@@ -483,6 +500,16 @@ class TestRecord:
             assert record_result.records[0].values == record.values
             assert record_result.records[0].sequence == record_result.start_seq
             assert record_result.records[1].sequence == record_result.start_seq + 1
+            assert record_result.records[1].values[0] == 1
+            assert record_result.records[1].values[1] == 2
+            assert record_result.records[1].values[2] == 3
+            assert record_result.records[1].values[3] == 99
+            assert record_result.records[1].values[4] == 'yc1'
+            assert record_result.records[1].values[5] == 1.1
+            assert record_result.records[1].values[6] == 10.01
+            assert record_result.records[1].values[7] is True
+            assert record_result.records[1].values[8] == 1455869335000000
+            assert record_result.records[1].values[9] == decimal.Decimal('12.2219999999999995310417943983338773250579833984375')
         finally:
             clean_topic(dh_pb, project_name)
             dh_pb.delete_project(project_name)

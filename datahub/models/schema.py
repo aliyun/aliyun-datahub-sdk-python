@@ -32,12 +32,17 @@ from ..utils import ErrorMessage, check_type, to_str
 class FieldType(Enum):
     """
     Field Types, datahub support 5 types of field, there are:
-        ``BIGINT``, ``STRING``, ``BOOLEAN``, ``TIMESTAMP``, ``DOUBLE``, ``DECIMAL``
+        ``TINYINT``, ``SMALLINT``, ``INTEGER``, ``BIGINT``, ``STRING``,
+        ``BOOLEAN``, ``TIMESTAMP``, ``FLOAT``, ``DOUBLE``, ``DECIMAL``
     """
+    TINYINT = 'tinyint'
+    SMALLINT = 'smallint'
+    INTEGER = 'integer'
     BIGINT = 'bigint'
     STRING = 'string'
     BOOLEAN = 'boolean'
     TIMESTAMP = 'timestamp'
+    FLOAT = 'float'
     DOUBLE = 'double'
     DECIMAL = 'decimal'
 

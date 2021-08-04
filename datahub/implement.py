@@ -101,11 +101,11 @@ class DataHubJson(object):
         result = ListTopicResult.parse_content(content)
         return result
 
-    def create_blob_topic(self, project_name, topic_name, shard_count, life_cycle, comment):
-        self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.BLOB, comment)
+    def create_blob_topic(self, project_name, topic_name, shard_count, life_cycle, extend_mode, comment):
+        self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.BLOB, comment, extend_mode)
 
-    def create_tuple_topic(self, project_name, topic_name, shard_count, life_cycle, record_schema, comment):
-        self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.TUPLE, comment, record_schema)
+    def create_tuple_topic(self, project_name, topic_name, shard_count, life_cycle, record_schema, extend_mode, comment):
+        self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.TUPLE, comment, extend_mode, record_schema)
 
     def get_topic(self, project_name, topic_name):
         if check_empty(project_name):
@@ -621,7 +621,7 @@ class DataHubJson(object):
                 return shard
 
     def __create_topic(self, project_name, topic_name, shard_count, life_cycle, record_type, comment,
-                       record_schema=None):
+                       extend_mode=None, record_schema=None):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if not check_topic_name_valid(topic_name):
@@ -633,9 +633,11 @@ class DataHubJson(object):
         if record_type == RecordType.TUPLE:
             if not check_type(record_schema, RecordSchema):
                 raise InvalidParameterException(ErrorMessage.INVALID_RECORD_SCHEMA_TYPE)
+        if extend_mode is not None and not isinstance(extend_mode, bool):
+            raise InvalidParameterException('type of extend mode should be \'bool\'')
 
         url = Path.TOPIC % (project_name, topic_name)
-        request_param = CreateTopicRequestParams(shard_count, life_cycle, record_type, record_schema, comment)
+        request_param = CreateTopicRequestParams(shard_count, life_cycle, record_type, record_schema, extend_mode, comment)
 
         self._rest_client.post(url, data=request_param.content())
 

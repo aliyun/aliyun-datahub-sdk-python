@@ -103,13 +103,14 @@ class CreateTopicRequestParams(RequestParams):
     """
 
     __slots__ = ('_shard_count', '_life_cycle', '_record_type', '_record_schema',
-                 '_comment')
+                 '_extend_mode', '_comment')
 
-    def __init__(self, shard_count, life_cycle, record_type, record_schema, comment):
+    def __init__(self, shard_count, life_cycle, record_type, record_schema, extend_mode, comment):
         self._shard_count = shard_count
         self._life_cycle = life_cycle
         self._record_type = record_type
         self._record_schema = record_schema
+        self._extend_mode = extend_mode
         self._comment = comment
 
     @property
@@ -145,6 +146,14 @@ class CreateTopicRequestParams(RequestParams):
         self._record_schema = value
 
     @property
+    def extend_mode(self):
+        return self._extend_mode
+
+    @extend_mode.setter
+    def use(self, value):
+        self._extend_mode = value
+
+    @property
     def comment(self):
         return self._comment
 
@@ -159,11 +168,16 @@ class CreateTopicRequestParams(RequestParams):
             "RecordType": self._record_type.value,
             "Comment": self._comment
         }
+
         if RecordType.TUPLE == self._record_type:
             if isinstance(self._record_schema, RecordSchema):
                 data['RecordSchema'] = self._record_schema.to_json_string()
             else:
                 data['RecordSchema'] = self._record_schema
+
+        if self._extend_mode is not None:
+            data['ExpandMode'] = 'extend' if self._extend_mode else 'split'
+
         return json.dumps(data)
 
 
