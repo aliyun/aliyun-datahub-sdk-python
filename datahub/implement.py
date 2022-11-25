@@ -680,7 +680,8 @@ class DataHubPB(DataHubJson):
 
         request_param = PutPBRecordsRequestParams(record_list)
 
-        content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers())
+        content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
+                                        compress_format=self._compress_format)
 
         result = PutPBRecordsResult.parse_content(content)
 
@@ -698,7 +699,8 @@ class DataHubPB(DataHubJson):
 
         request_param = PutPBRecordsRequestParams(record_list)
 
-        self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers())
+        self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
+                                        compress_format=self._compress_format)
 
     def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num):
         return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num)
