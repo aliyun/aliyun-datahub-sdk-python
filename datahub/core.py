@@ -364,7 +364,7 @@ class DataHub(object):
         return self._datahub_impl.put_records_by_shard(project_name, topic_name, shard_id, record_list)
 
     @type_assert(object, str, str, str, str, int)
-    def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num):
+    def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num, sub_id=None):
         """
         Get records from a topic
 
@@ -379,10 +379,10 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.InvalidParameterException` if the cursor is invalid; project_name, topic_name, shard_id, or cursor is empty
         :raise: :class:`datahub.exceptions.DatahubException` if crc is wrong in pb mode
         """
-        return self._datahub_impl.get_blob_records(project_name, topic_name, shard_id, cursor, limit_num)
+        return self._datahub_impl.get_blob_records(project_name, topic_name, shard_id, cursor, limit_num, sub_id)
 
     @type_assert(object, str, str, str, RecordSchema, str, int)
-    def get_tuple_records(self, project_name, topic_name, shard_id, record_schema, cursor, limit_num):
+    def get_tuple_records(self, project_name, topic_name, shard_id, record_schema, cursor, limit_num, sub_id=None):
         """
         Get records from a topic
 
@@ -400,8 +400,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.InvalidParameterException` if the cursor is invalid; project_name, topic_name, shard_id, or cursor is empty
         :raise: :class:`datahub.exceptions.DatahubException` if crc is wrong in pb mode
         """
-        return self._datahub_impl.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor,
-                                                    limit_num)
+        return self._datahub_impl.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor, limit_num, sub_id)
 
     @type_assert(object, str, str, str)
     def get_metering_info(self, project_name, topic_name, shard_id):

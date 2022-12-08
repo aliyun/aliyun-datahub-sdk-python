@@ -1184,7 +1184,7 @@ class TestRecord:
             try:
                 dh_pb.put_records_by_shard(project_name, topic_name, "-1", [record])
             except ResourceNotFoundException as e:
-                assert e.error_msg == 'ShardId Not Exist. Invalid shard id:' + project_name + '/' + topic_name + '/-1'
+                assert e.error_msg == 'Shard is not exist: ' + project_name + '/' + topic_name + '/-1'
 
             # ======================= field size not match =======================
             try:
@@ -1208,7 +1208,7 @@ class TestRecord:
             try:
                 dh_pb.put_records_by_shard(project_name, 'a', "0", [record])
             except ResourceNotFoundException as e:
-                assert e.error_msg == 'The specified topic name does not exist.'
+                assert e.error_msg == 'The specified topic does not exist.'
 
             # ======================= invalid timestamp =======================
             try:

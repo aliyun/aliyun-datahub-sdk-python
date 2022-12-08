@@ -22,7 +22,7 @@ import time
 from .models.params import *
 from .models.results import *
 from .auth import AliyunAccount
-from .exceptions import InvalidParameterException
+from .exceptions import InvalidParameterException, InvalidOperationException
 from .models import ShardState, OffsetBase, SubscriptionState, FieldType
 from .rest import Path
 from .rest import RestClient
@@ -274,11 +274,11 @@ class DataHubJson(object):
     def put_records_by_shard(self, project_name, topic_name, shard_id, record_list):
         raise DatahubException('put_records_by_shard api only support pb mode')
 
-    def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num):
-        return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num)
+    def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num, sub_id):
+        return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num, sub_id)
 
-    def get_tuple_records(self, project_name, topic_name, shard_id, record_schema, cursor, limit_num):
-        return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num, record_schema)
+    def get_tuple_records(self, project_name, topic_name, shard_id, record_schema, cursor, limit_num, sub_id):
+        return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num, sub_id, record_schema)
 
     def get_metering_info(self, project_name, topic_name, shard_id):
         if check_empty(project_name):
@@ -641,7 +641,7 @@ class DataHubJson(object):
 
         self._rest_client.post(url, data=request_param.content())
 
-    def __get_records(self, project_name, topic_name, shard_id, cursor, limit_num, record_schema=None):
+    def __get_records(self, project_name, topic_name, shard_id, cursor, limit_num, sub_id=None, record_schema=None):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
@@ -652,6 +652,8 @@ class DataHubJson(object):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'cursor')
         if check_type(cursor, GetCursorResult):
             raise InvalidParameterException(ErrorMessage.INVALID_TYPE % ('cursor', 'str'))
+        if sub_id is not None:
+            raise InvalidOperationException("Json protocol not support this method")
 
         url = Path.SHARD % (project_name, topic_name, shard_id)
 
@@ -702,13 +704,13 @@ class DataHubPB(DataHubJson):
         self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
                                         compress_format=self._compress_format)
 
-    def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num):
-        return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num)
+    def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num, sub_id):
+        return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num, sub_id)
 
-    def get_tuple_records(self, project_name, topic_name, shard_id, record_schema, cursor, limit_num):
-        return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num, record_schema)
+    def get_tuple_records(self, project_name, topic_name, shard_id, record_schema, cursor, limit_num, sub_id):
+        return self.__get_records(project_name, topic_name, shard_id, cursor, limit_num, sub_id, record_schema)
 
-    def __get_records(self, project_name, topic_name, shard_id, cursor, limit_num, record_schema=None):
+    def __get_records(self, project_name, topic_name, shard_id, cursor, limit_num, sub_id=None, record_schema=None):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
@@ -721,7 +723,7 @@ class DataHubPB(DataHubJson):
         url = Path.SHARD % (project_name, topic_name, shard_id)
         request_param = GetPBRecordsRequestParams(cursor, limit_num)
 
-        content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
+        content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(sub_id),
                                          compress_format=self._compress_format)
 
         result = GetPBRecordsResult.parse_content(content, record_schema=record_schema)

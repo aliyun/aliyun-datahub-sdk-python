@@ -424,11 +424,14 @@ class GetPBRecordsRequestParams(GetRecordsRequestParams):
         return pb_message_wrap(pb_data)
 
     @staticmethod
-    def extra_headers():
-        return {
+    def extra_headers(sub_id=None):
+        header = {
             Headers.REQUEST_ACTION: GetRecordsRequestParams.action,
             Headers.CONTENT_TYPE: ContentType.HTTP_PROTOBUF.value
         }
+        if sub_id is not None:
+            header[Headers.CONTENT_SUB_ID] = sub_id
+        return header
 
 
 class GetMeteringInfoRequestParams(RequestParams):

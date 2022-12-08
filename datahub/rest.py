@@ -65,6 +65,7 @@ class Headers(object):
     CONTENT_LENGTH = "Content-Length"
     CONTENT_MD5 = "Content-MD5"
     CONTENT_TYPE = "Content-Type"
+    CONTENT_SUB_ID = "x-datahub-sub-id"
     DATE = "Date"
     ETAG = "ETag"
     EXPIRES = "Expires"
