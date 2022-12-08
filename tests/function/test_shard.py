@@ -132,6 +132,7 @@ class TestShard:
             assert new_shards[0].end_hash_key == '66666666666666666666666666666666'
             assert new_shards[1].begin_hash_key == '66666666666666666666666666666666'
 
+            time.sleep(1)       # Shard cache update freq = 1s
             dh.wait_shards_ready(project_name, topic_name_1)
             shard_list = dh.list_shard(project_name, topic_name_1).shards
             print(shard_list)
@@ -148,6 +149,7 @@ class TestShard:
             print(merge_result)
             assert merge_result.shard_id == '3'
 
+            time.sleep(1)       # Shard cache update freq = 1s
             dh.wait_shards_ready(project_name, topic_name_1)
             shard_list = dh.list_shard(project_name, topic_name_1).shards
             print(shard_list)

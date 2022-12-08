@@ -49,7 +49,7 @@ except Exception:
     sys.exit(-1)
 
 try:
-    topic_result = dh.get_topic(topic_name, project_name)
+    topic_result = dh.get_topic(project_name, topic_name)
     print("get topic suc! topic=%s" % str(topic_result))
     if topic_result.record_type != RecordType.BLOB:
         print("topic type illegal!")
