@@ -46,7 +46,7 @@ except Exception:
     sys.exit(-1)
 
 try:
-    topic_result = dh.get_topic(topic_name, project_name)
+    topic_result = dh.get_topic(project_name, topic_name)
     print("get topic suc! topic=%s" % str(topic_result))
     if topic_result.record_type != RecordType.TUPLE:
         print("topic type illegal!")
@@ -63,7 +63,5 @@ try:
         cursor = get_result.next_cursor
 
 except DatahubException as e:
-    print(traceback.format_exc(e))
-    sys.exit(-1)
-else:
+    print(traceback.format_exc())
     sys.exit(-1)
