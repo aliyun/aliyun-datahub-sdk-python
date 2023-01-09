@@ -37,7 +37,7 @@ except ImportError:
 import logging
 
 logger = logging.getLogger('datahub.account')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 if not logger.handlers:
     logger.addHandler(logging.NullHandler())
 
