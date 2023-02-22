@@ -36,7 +36,7 @@ if six.PY3:
 class ConnectorType(Enum):
     """
     ConnectorType enum class, there are: ``SINK_ODPS``, ``SINK_ADS``, ``SINK_ES``, ``SINK_FC``, \
-    ``SINK_MYSQL``, ``SINK_OSS``, ``SINK_OTS``, ``SINK_DATAHUB``
+    ``SINK_MYSQL``, ``SINK_OSS``, ``SINK_OTS``, ``SINK_HOLOGRES``, ``SINK_DATAHUB``
     """
     SINK_ODPS = 'sink_odps'
     SINK_ADS = 'sink_ads'
@@ -45,6 +45,7 @@ class ConnectorType(Enum):
     SINK_MYSQL = 'sink_mysql'
     SINK_OSS = 'sink_oss'
     SINK_OTS = 'sink_ots'
+    SINK_HOLOGRES = 'sink_hologres'
     SINK_DATAHUB = 'sink_datahub'
 
 
@@ -982,6 +983,132 @@ class OtsConnectorConfig(ConnectorConfig):
         return cls(endpoint, instance, table, auth_mode, access_id, access_key, write_mode)
 
 
+class HologresConnectorConfig(ConnectorConfig):
+    """
+    Connector config for Hologres
+
+    Members:
+        project (:class:`str`): project
+
+        topic (:class:`str`): topic
+
+        endpoint (:class:`str`): endpoint
+
+        instance_id (:class:`str`): instance id
+
+        auth_mode (:class:`datahub.models.connector.AuthMode`): auth mode
+
+        timestamp_unit (:class:`str`): timestamp unit
+
+        access_id (:class:`str`): access id
+
+        access_key (:class:`str`): access key
+    """
+
+    __slots__ = ('_project', '_topic', '_endpoint', '_instance_id', '_auth_mode', '_timestamp_unit', '_access_id', '_access_key')
+
+    def __init__(self, project, topic, endpoint, instance_id, auth_mode, timestamp_unit, access_id='', access_key=''):
+        self._project = project
+        self._topic = topic
+        self._endpoint = endpoint
+        self._instance_id = instance_id
+        self._auth_mode = auth_mode
+        self._timestamp_unit = timestamp_unit
+        self._access_id = access_id
+        self._access_key = access_key
+
+    @property
+    def project(self):
+        return self._project
+
+    @project.setter
+    def project(self, value):
+        self._project = value
+
+    @property
+    def topic(self):
+        return self._topic
+
+    @topic.setter
+    def topic(self, value):
+        self._topic = value
+
+    @property
+    def endpoint(self):
+        return self._endpoint
+
+    @endpoint.setter
+    def endpoint(self, value):
+        self._endpoint = value
+
+    @property
+    def instance_id(self):
+        return self._instance_id
+
+    @instance_id.setter
+    def instance_id(self, value):
+        self._instance_id = value
+
+    @property
+    def auth_mode(self):
+        return self._auth_mode
+
+    @auth_mode.setter
+    def auth_mode(self, value):
+        self._auth_mode = value
+
+    @property
+    def timestamp_unit(self):
+        return self._timestamp_unit
+
+    @timestamp_unit.setter
+    def timestamp_unit(self, value):
+        self._timestamp_unit = value
+
+    @property
+    def access_id(self):
+        return self._access_id
+
+    @access_id.setter
+    def access_id(self, value):
+        self._access_id = value
+
+    @property
+    def access_key(self):
+        return self._access_key
+
+    @access_key.setter
+    def access_key(self, value):
+        self._access_key = value
+
+    def to_json(self):
+        data = {
+            "Endpoint": self._endpoint,
+            "Project": self._project,
+            "Topic": self._topic,
+            "InstanceId": self._instance_id,
+            "AuthMode": self._auth_mode.value,
+            "TimestampUnit": self._timestamp_unit
+        }
+        if self._auth_mode == AuthMode.AK and self.access_id and self.access_key:
+            data["AccessId"] = self.access_id
+            data["AccessKey"] = self.access_key
+        return data
+
+    @classmethod
+    def from_dict(cls, dict_):
+        project = dict_.get('Project', '')
+        topic = dict_.get('Topic', '')
+        endpoint = dict_.get('Endpoint', '')
+        instance_id = dict_.get('InstanceId', '')
+        auth_mode = AuthMode(dict_.get('AuthMode', 'ak'))
+        timestamp_unit = dict_.get('TimestampUnit', '')
+        access_id = dict_.get('AccessId', '')
+        access_key = dict_.get('AccessKey', '')
+
+        return cls(project, topic, endpoint, instance_id, auth_mode, timestamp_unit, access_id, access_key)
+
+
 class DataHubConnectorConfig(ConnectorConfig):
     """
     Connector config for DataHub
@@ -1090,6 +1217,7 @@ connector_config_dict = {
     ConnectorType.SINK_MYSQL: DatabaseConnectorConfig,
     ConnectorType.SINK_OSS: OssConnectorConfig,
     ConnectorType.SINK_OTS: OtsConnectorConfig,
+    ConnectorType.SINK_HOLOGRES: HologresConnectorConfig,
     ConnectorType.SINK_DATAHUB: DataHubConnectorConfig
 }
 
