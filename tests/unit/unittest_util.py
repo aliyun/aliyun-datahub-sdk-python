@@ -74,3 +74,36 @@ def gen_pb_mock_api(check):
         return response(status_code, content, headers, request=request)
 
     return datahub_pb_api_mock
+
+
+def gen_batch_mock_api(check):
+    @urlmatch(netloc=r'(.*\.)?endpoint')
+    def datahub_batch_api_mock(url, request):
+        check(request)
+        path = url.path.replace('/', '.')[1:]
+        res_file = os.path.join(_FIXTURE_PATH, '%s.bin' % path)
+        status_code = 200
+        content = {
+        }
+        headers = {
+            'Content-Type': 'application/x-binary',
+            'x-datahub-request-id': 0
+        }
+        # ===>  For schema register
+        if not isinstance(request.body, bytes):
+            res_file = os.path.join(_FIXTURE_PATH, 'projects.schema.topics.list.json')
+            headers = {
+                'Content-Type': 'application/json',
+                'x-datahub-request-id': 0
+            }
+        # <===
+        try:
+            with open(res_file, 'rb') as f:
+                content = f.read()
+                if b"ErrorCode" in content:
+                    status_code = 404
+        except (IOError, InvalidParameterException) as e:
+            content['ErrorMessage'] = 'Loads fixture %s failed, error: %s' % (res_file, e)
+        return response(status_code, content, headers, request=request)
+
+    return datahub_batch_api_mock

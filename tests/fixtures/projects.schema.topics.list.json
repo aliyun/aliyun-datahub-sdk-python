@@ -1,0 +1,14 @@
+{
+    "PageCount": 1,
+    "PageNumber": 1, 
+    "PageSize": 1, 
+    "RecordSchemaList": [
+        {
+            "CreateTime": 1658132195, 
+            "Creator": "", 
+            "RecordSchema": "{\"fields\": [{\"name\": \"bigint_field\", \"type\": \"bigint\"}, {\"name\": \"string_field\", \"type\": \"string\"}, {\"name\": \"double_field\", \"type\": \"double\"}, {\"name\": \"bool_field\", \"type\": \"boolean\"}, {\"name\": \"time_field\", \"type\": \"timestamp\"}]}",
+            "VersionId": 1
+        }
+    ],
+    "TotalCount": 1
+}

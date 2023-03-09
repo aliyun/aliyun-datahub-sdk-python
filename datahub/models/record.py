@@ -45,7 +45,8 @@ class Record(object):
     """
     Base Record class
     """
-    __slots__ = ('_values', '_shard_id', '_hash_key', '_partition_key', '_attributes', '_sequence', '_system_time')
+    __slots__ = ('_values', '_shard_id', '_hash_key', '_partition_key', '_attributes', '_sequence', '_system_time',
+                 '_record_key', '_batch_size', '_batch_index')
 
     encode = 0
 
@@ -57,6 +58,9 @@ class Record(object):
         self._attributes = dict()
         self._sequence = 0
         self._system_time = 0
+        self._record_key = None
+        self._batch_size = 0
+        self._batch_index = 0
 
     @property
     def values(self):
@@ -80,7 +84,7 @@ class Record(object):
 
     @property
     def partition_key(self):
-        return self.partition_key
+        return self._partition_key
 
     @partition_key.setter
     def partition_key(self, value):
@@ -109,6 +113,30 @@ class Record(object):
     @system_time.setter
     def system_time(self, value):
         self._system_time = value
+
+    @property
+    def record_key(self):
+        return self._record_key
+
+    @record_key.setter
+    def record_key(self, value):
+        self._record_key = value
+
+    @property
+    def batch_size(self):
+        return self._batch_size
+
+    @batch_size.setter
+    def batch_size(self, value):
+        self._batch_size = value
+
+    @property
+    def batch_index(self):
+        return self._batch_index
+
+    @batch_index.setter
+    def batch_index(self, value):
+        self._batch_index = value
 
     def get_attribute(self, key):
         if key not in self._attributes:
@@ -141,7 +169,10 @@ class Record(object):
 
     def to_json(self):
         data = {
-            "Data": self.encode_values()
+            "Data": self.encode_values(),
+            "Sequence": self._sequence,
+            "SystemTime": self._system_time,
+            "BatchIndex": self._batch_index
         }
         if self._partition_key:
             data["PartitionKey"] = self._partition_key
@@ -151,10 +182,6 @@ class Record(object):
             data["ShardId"] = self._shard_id
         if self._attributes:
             data["Attributes"] = self._attributes
-        if self._sequence:
-            data["Sequence"] = self._sequence
-        if self._system_time:
-            data["SystemTime"] = self._system_time
         return data
 
     def to_pb_record_entry(self):

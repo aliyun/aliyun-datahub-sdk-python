@@ -36,9 +36,26 @@ class CompressFormat(Enum):
     CompressFormat enum class, there are: ``NONE``, ``LZ4``, ``ZLIB``, ``DEFLATE``
     """
     NONE = ''
+    DEFLATE = 'deflate'
     LZ4 = 'lz4'
     ZLIB = 'zlib'
-    DEFLATE = 'deflate'
+
+    def get_index(self):
+        return {
+            CompressFormat.NONE: 0,
+            CompressFormat.DEFLATE: 1,
+            CompressFormat.LZ4: 2,
+            CompressFormat.ZLIB: 3
+        }[self]
+
+    @staticmethod
+    def get_compress(index):
+        return {
+            0: CompressFormat.NONE,
+            1: CompressFormat.DEFLATE,
+            2: CompressFormat.LZ4,
+            3: CompressFormat.ZLIB
+        }[index]
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -58,6 +75,21 @@ class Compressor(object):
     @abc.abstractmethod
     def compress_format(self):
         pass
+
+
+class NoneCompressor(Compressor):
+    """
+    None compressor
+    """
+
+    def compress(self, data):
+        return data
+
+    def decompress(self, data, raw_size=-1):
+        return data
+
+    def compress_format(self):
+        return CompressFormat.NONE
 
 
 class Lz4Compressor(Compressor):
@@ -97,7 +129,7 @@ class DeflateCompressor(Compressor):
     """
 
     def compress(self, data):
-        return zlib.compress(data)
+        return data
 
     def decompress(self, data, raw_size=-1):
         return data
@@ -106,21 +138,22 @@ class DeflateCompressor(Compressor):
         return CompressFormat.DEFLATE
 
 
+none_compressor = NoneCompressor()
 lz4_compressor = Lz4Compressor()
 zlib_compressor = ZlibCompressor()
 deflate_compressor = DeflateCompressor()
 
 _compressor_dict = {
-    CompressFormat.NONE: None,
+    CompressFormat.NONE: none_compressor,
+    CompressFormat.DEFLATE: deflate_compressor,
     CompressFormat.LZ4: lz4_compressor,
-    CompressFormat.ZLIB: zlib_compressor,
-    CompressFormat.DEFLATE: deflate_compressor
+    CompressFormat.ZLIB: zlib_compressor
 }
 
 
 def get_compressor(compress_format):
     try:
-        compress_format = CompressFormat(compress_format)
+        compress_format = CompressFormat(compress_format) if compress_format else CompressFormat.NONE
     except ValueError as e:
         raise DatahubException(e)
     return _compressor_dict.get(compress_format, None)

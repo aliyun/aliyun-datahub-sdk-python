@@ -1,4 +1,6 @@
 {
+  "Protocol": "http1.1",
+  "Interval": 300000,
   "Shards": [
     {
       "BeginHashKey": "00000000000000000000000000000000",

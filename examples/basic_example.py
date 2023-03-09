@@ -21,7 +21,7 @@ import sys
 import time
 import traceback
 
-from datahub import DataHub
+from datahub import DataHub, DatahubProtocolType
 from datahub.exceptions import ResourceExistException, DatahubException
 from datahub.models import FieldType, RecordSchema, TupleRecord, BlobRecord, CursorType, RecordType
 
@@ -29,7 +29,9 @@ access_id = ''
 access_key = ''
 endpoint = ''
 
-dh = DataHub(access_id, access_key, endpoint)
+dh = DataHub(access_id, access_key, endpoint)                                                   # Json
+# dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.PB)           # Pb
+# dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.BATCH)        # Batch
 
 # ===================== 创建project =====================
 project_name = 'project'

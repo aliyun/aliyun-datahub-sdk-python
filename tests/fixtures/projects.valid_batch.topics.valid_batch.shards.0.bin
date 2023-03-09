@@ -1,0 +1,4 @@
+{
+  "ErrorCode": "NoSuchShard",
+  "ErrorMessage": "ShardId Not Exist. Invalid shard id:shard_test_p1524491527_1/meter_test/0"
+}

@@ -1,0 +1,4 @@
+{
+  "ErrorCode": "InvalidCursor",
+  "ErrorMessage": "The cursor is invalid."
+}

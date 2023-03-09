@@ -133,8 +133,8 @@ class Subscription(object):
 
     @classmethod
     def from_dict(cls, dict_):
-        return cls(dict_['Comment'], dict_['CreateTime'], dict_['IsOwner'], dict_['LastModifyTime'],
-                   SubscriptionState(dict_['State']), dict_['SubId'], dict_['TopicName'], dict_['Type'])
+        return cls(dict_.get('Comment'), dict_.get('CreateTime'), dict_.get('IsOwner'), dict_.get('LastModifyTime'),
+                   SubscriptionState(dict_.get('State')), dict_.get('SubId'), dict_.get('TopicName'), dict_.get('Type'))
 
     def to_json(self):
         return {
@@ -185,7 +185,7 @@ class OffsetBase(object):
 
     @classmethod
     def from_dict(cls, dict_):
-        return cls(dict_['Sequence'], dict_['Timestamp'])
+        return cls(dict_.get('Sequence', -1), dict_.get('Timestamp', -1))
 
     def to_json(self):
         return {
@@ -224,7 +224,7 @@ class OffsetWithVersion(OffsetBase):
 
     @classmethod
     def from_dict(cls, dict_):
-        return cls(dict_['Sequence'], dict_['Timestamp'], dict_['Version'])
+        return cls(dict_.get('Sequence', -1), dict_.get('Timestamp', -1), dict_.get('Version', 0))
 
     def to_json(self):
         return {
@@ -263,7 +263,7 @@ class OffsetWithSession(OffsetWithVersion):
 
     @classmethod
     def from_dict(cls, dict_):
-        return cls(dict_['Sequence'], dict_['Timestamp'], dict_['Version'], dict_['SessionId'])
+        return cls(dict_.get('Sequence', -1), dict_.get('Timestamp', -1), dict_.get('Version', 0), dict_.get('SessionId', ''))
 
     def to_json(self):
         return {
@@ -271,4 +271,48 @@ class OffsetWithSession(OffsetWithVersion):
             "Timestamp": self._timestamp,
             "Version": self._version,
             "SessionId": self._session_id
+        }
+
+
+class OffsetWithBatchIndex(OffsetWithSession):
+    """
+    offset with batch_index class
+
+    Members:
+        sequence (:class:`int`): sequence
+
+        timestamp (:class:`int`): timestamp
+
+        version (:class:`int`): version
+
+        session_id (:class:`int`): session id
+
+        batch_index (:class:`int`): batch index
+    """
+    __slots__ = ('_sequence', '_timestamp', '_version', '_session_id', '_batch_index')
+
+    def __init__(self, sequence, timestamp, version, session_id, batch_index):
+        super(OffsetWithBatchIndex, self).__init__(sequence, timestamp, version, session_id)
+        self._batch_index = batch_index
+
+    @property
+    def batch_index(self):
+        return self._batch_index
+
+    @batch_index.setter
+    def batch_index(self, value):
+        self._batch_index = value
+
+    @classmethod
+    def from_dict(cls, dict_):
+        return cls(dict_.get('Sequence', -1), dict_.get('Timestamp', -1), dict_.get('Version', 0),
+                   dict_.get('SessionId', ''), dict_.get('BatchIndex', 0))
+
+    def to_json(self):
+        return {
+            "Sequence": self._sequence,
+            "Timestamp": self._timestamp,
+            "Version": self._version,
+            "SessionId": self._session_id,
+            "BatchIndex": self._batch_index
         }

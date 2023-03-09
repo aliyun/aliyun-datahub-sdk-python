@@ -24,7 +24,7 @@ from httmock import HTTMock
 
 from datahub import DataHub
 from datahub.exceptions import ResourceNotFoundException, InvalidOperationException, InvalidParameterException, \
-    LimitExceededException, DatahubException
+    LimitExceededException, DatahubException, ShardSealedException
 from datahub.models import ShardState
 from .unittest_util import gen_mock_api
 
@@ -262,7 +262,7 @@ class TestShard:
 
             with HTTMock(gen_mock_api(check)):
                 split_result = dh.split_shard(project_name, topic_name, shard_id, split_key)
-        except InvalidOperationException:
+        except ShardSealedException:
             pass
         else:
             raise Exception('split shard success with invalid shard state!')
@@ -446,7 +446,7 @@ class TestShard:
 
             with HTTMock(gen_mock_api(check)):
                 merge_result = dh.merge_shard(project_name, topic_name, shard_id, adj_shard_id)
-        except InvalidOperationException:
+        except ShardSealedException:
             pass
         else:
             raise Exception('merge shard success with invalid shard state!')
