@@ -30,8 +30,10 @@ from .connector import ConnectorType, ConnectorState, get_connector_builder_by_t
 from .record import FailedRecord, BlobRecord, TupleRecord, RecordType
 from .schema import RecordSchema
 from .shard import Shard, ShardBase, ShardContext
-from .subscription import OffsetWithSession, OffsetWithVersion, Subscription
-from ..proto.datahub_record_proto_pb import GetRecordsResponse, PutRecordsResponse
+from .subscription import Subscription, OffsetWithBatchIndex
+from ..batch.batch_serializer import BatchSerializer
+from ..batch.utils import SchemaObject
+from ..proto.datahub_record_proto_pb import GetRecordsResponse, PutRecordsResponse, GetBinaryRecordsResponse
 from ..utils import to_text, unwrap_pb_frame
 
 
@@ -332,10 +334,12 @@ class ListShardResult(Result):
         shards (:class:`list`): list of :obj:`datahub.models.Shard`
     """
 
-    __slots__ = '_shards'
+    __slots__ = '_shards', '_protocol', '_interval'
 
-    def __init__(self, shards):
+    def __init__(self, shards, protocol, interval):
         self._shards = shards
+        self._protocol = protocol
+        self._interval = interval
 
     @property
     def shards(self):
@@ -345,15 +349,35 @@ class ListShardResult(Result):
     def shards(self, value):
         self._shards = value
 
+    @property
+    def protocol(self):
+        return self._protocol
+
+    @protocol.setter
+    def protocol(self, value):
+        self._protocol = value
+
+    @property
+    def interval(self):
+        return self._interval
+
+    @interval.setter
+    def interval(self, value):
+        self._interval = value
+
     @classmethod
     def parse_content(cls, content, **kwargs):
         content = json.loads(to_text(content))
         shards = [Shard.from_dict(item) for item in content['Shards']]
-        return cls(shards)
+        protocol = content['Protocol']
+        interval = content['Interval']
+        return cls(shards, protocol, interval)
 
     def to_json(self):
         return {
-            'Shards': [shard.to_json() for shard in self._shards]
+            'Shards': [shard.to_json() for shard in self._shards],
+            'Protocol': self._protocol,
+            'Interval': self._interval
         }
 
 
@@ -597,7 +621,6 @@ class GetRecordsResult(Result):
         content = json.loads(to_text(content))
 
         records = []
-        sequence = content['StartSeq']
         for item in content['Records']:
             data = item['Data']
             if isinstance(data, six.string_types):
@@ -607,9 +630,8 @@ class GetRecordsResult(Result):
                 record = TupleRecord(schema=record_schema, values=data)
             if 'Attributes' in item:
                 record.attributes = item['Attributes']
-            record.sequence = sequence
+            record.sequence = item['Sequence']
             record.system_time = item['SystemTime']
-            sequence += 1
             records.append(record)
         return cls(content['NextCursor'], content['RecordCount'], content['StartSeq'], records)
 
@@ -640,7 +662,6 @@ class GetPBRecordsResult(GetRecordsResult):
         record_count = pb_get_record_response.record_count
         start_sequence = pb_get_record_response.start_sequence
         records = []
-        sequence = start_sequence
         for pb_record in pb_get_record_response.records:
             record_schema = kwargs['record_schema']
             if record_schema:
@@ -653,10 +674,49 @@ class GetPBRecordsResult(GetRecordsResult):
                 attribute.key: attribute.value for attribute in pb_record.attributes.attributes
             }
             record.system_time = pb_record.system_time
-            record.sequence = sequence
-            sequence += 1
+            record.sequence = pb_record.sequence
             records.append(record)
         return cls(next_cursor, record_count, start_sequence, records)
+
+
+class GetBatchRecordsResult(GetRecordsResult):
+    """
+    Batch Result of get records api
+    """
+
+    @classmethod
+    def parse_content(cls, content, **kwargs):
+        crc, compute_crc, pb_str = unwrap_pb_frame(content)
+        if crc != compute_crc:
+            raise DatahubException('Parse pb response body fail, error: crc check error. crc: %s, compute crc: %s'
+                                   % (crc, compute_crc))
+
+        project_name = kwargs['project_name']
+        topic_name = kwargs['topic_name']
+        init_schema = kwargs['init_schema']
+        schema_register = kwargs['schema_register']
+
+        pb_get_record_response = GetBinaryRecordsResponse()
+        pb_get_record_response.ParseFromString(pb_str)
+        next_cursor = pb_get_record_response.next_cursor
+        record_count = 0
+        start_sequence = pb_get_record_response.start_sequence
+        total_records_list = []
+        schema_object = SchemaObject(project_name, topic_name, schema_register)
+        for i in range(pb_get_record_response.record_count):
+            pb_record = pb_get_record_response.records[i]
+            byte_data = pb_record.data
+            records_list = BatchSerializer.deserialize(init_schema, schema_object, byte_data)
+            index, records_len = 0, len(records_list)
+            for record in records_list:
+                record.system_time = pb_record.system_time
+                record.sequence = pb_record.sequence
+                record.batch_size = records_len
+                record.batch_index = index
+                index += 1
+            total_records_list += records_list
+            record_count += records_len
+        return cls(next_cursor, record_count, start_sequence, total_records_list)
 
 
 class GetMeteringInfoResult(Result):
@@ -768,7 +828,7 @@ class CreateConnectorResult(Result):
     @classmethod
     def parse_content(cls, content, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content.get('ConnectorId',''))
+        return cls(content.get('ConnectorId', ''))
 
     def to_json(self):
         return {
@@ -934,7 +994,7 @@ class GetConnectorResult(Result):
         column_fields = content.get('ColumnFields', [])
         connector_config = get_connector_builder_by_type(connector_type).from_dict(content['Config'])
         extra_config = content.get('ExtraInfo', {})
-        shard_contexts = [ShardContext.from_dict(item) for item in content['ShardContexts']] # deprecated
+        shard_contexts = [ShardContext.from_dict(item) for item in content['ShardContexts']]  # deprecated
         sub_id = extra_config.get('SubscriptionId', '')
         return cls(cluster_addr, connector_id, connector_type, state, creator, owner, create_time, column_fields,
                    connector_config, extra_config, shard_contexts, sub_id)
@@ -1026,7 +1086,7 @@ class InitAndGetSubscriptionOffsetResult(Result):
         offsets = {}
         for (k, v) in content['Offsets'].items():
             offsets.update({
-                k: OffsetWithSession.from_dict(v)
+                k: OffsetWithBatchIndex.from_dict(v)
             })
         return cls(offsets)
 
@@ -1068,7 +1128,7 @@ class GetSubscriptionOffsetResult(Result):
         offsets = {}
         for (k, v) in content['Offsets'].items():
             offsets.update({
-                k: OffsetWithVersion.from_dict(v)
+                k: OffsetWithBatchIndex.from_dict(v)
             })
         return cls(offsets)
 
@@ -1251,3 +1311,186 @@ class ListSubscriptionResult(Result):
             'TotalCount': self._total_count,
             'Subscriptions': [subscription.to_json() for subscription in self._subscriptions]
         }
+
+
+class ListTopicSchemaResult(Result):
+    """
+    Result of list topic schema
+    """
+
+    __slots__ = '_page_number', '_page_size', '_page_count', '_total_count', '_record_schema_list'
+
+    def __init__(self, page_number, page_size, page_count, total_count, record_schema_list):
+        self._page_number = page_number
+        self._page_size = page_size
+        self._page_count = page_count
+        self._total_count = total_count
+        self._record_schema_list = record_schema_list
+
+    @property
+    def page_number(self):
+        return self._page_number
+
+    @page_number.setter
+    def page_number(self, value):
+        self._page_number = value
+
+    @property
+    def page_size(self):
+        return self._page_size
+
+    @page_size.setter
+    def page_size(self, value):
+        self._page_size = value
+
+    @property
+    def page_count(self):
+        return self._page_count
+
+    @page_count.setter
+    def page_count(self, value):
+        self._page_count = value
+
+    @property
+    def total_count(self):
+        return self._total_count
+
+    @total_count.setter
+    def total_count(self, value):
+        self._total_count = value
+
+    @property
+    def record_schema_list(self):
+        return self._record_schema_list
+
+    @record_schema_list.setter
+    def record_schema_list(self, value):
+        self._record_schema_list = value
+
+    @classmethod
+    def parse_content(cls, content, **kwargs):
+        content = json.loads(to_text(content))
+        page_number = content.get("PageNumber", 0)
+        page_size = content.get("PageSize", 0)
+        page_count = content.get("PageCount", 0)
+        total_count = content.get("TotalCount", 0)
+        record_schema_list = content.get("RecordSchemaList", [])
+        return cls(page_number, page_size, page_count, total_count, record_schema_list)
+
+    def to_json(self):
+        return {
+            "PageNumber": self._page_number,
+            "PageSize": self._page_size,
+            "PageCount": self._page_count,
+            "TotalCount": self._total_count,
+            "RecordSchemaList": self._record_schema_list
+        }
+
+
+class GetTopicSchemaResult(Result):
+    """
+    Result of get topic schema
+    """
+
+    __slots__ = '_version_id', '_create_time', '_creator', '_record_schema'
+
+    def __init__(self, version_id, create_time, creator, record_schema):
+        self._version_id = version_id
+        self._create_time = create_time
+        self._creator = creator
+        self._record_schema = record_schema
+
+    @property
+    def version_id(self):
+        return self._version_id
+
+    @version_id.setter
+    def version_id(self, value):
+        self._version_id = value
+
+    @property
+    def create_time(self):
+        return self._create_time
+
+    @create_time.setter
+    def create_time(self, value):
+        self._create_time = value
+
+    @property
+    def creator(self):
+        return self._creator
+
+    @creator.setter
+    def creator(self, value):
+        self._creator = value
+
+    @property
+    def record_schema(self):
+        return self._record_schema
+
+    @record_schema.setter
+    def record_schema(self, value):
+        self._record_schema = value
+
+    @classmethod
+    def parse_content(cls, content, **kwargs):
+        content = json.loads(to_text(content))
+        version_id = content.get("VersionId", 0)
+        create_time = content.get("CreateTime", 0)
+        creator = content.get("Creator", 0)
+        record_schema = content.get("RecordSchema", 0)
+        return cls(version_id, create_time, creator, record_schema)
+
+    def to_json(self):
+        return {
+            "VersionId": self._version_id,
+            "CreateTime": self._create_time,
+            "Creator": self._creator,
+            "RecordSchema": self._record_schema
+        }
+
+
+class RegisterTopicSchemaResult(Result):
+    """
+    Result of register topic schema
+    """
+
+    __slots__ = '_version_id'
+
+    def __init__(self, version_id):
+        self._version_id = version_id
+
+    @property
+    def version_id(self):
+        return self._version_id
+
+    @version_id.setter
+    def version_id(self, value):
+        self._version_id = value
+
+    @classmethod
+    def parse_content(cls, content, **kwargs):
+        content = json.loads(to_text(content))
+        version_id = content.get("VersionId", 0)
+        return cls(version_id)
+
+    def to_json(self):
+        return {
+            "VersionId": self._version_id,
+        }
+
+
+class DeleteTopicSchemaResult(Result):
+    """
+    Result of delete topic schema
+    """
+
+    def __init__(self):
+        super(DeleteTopicSchemaResult, self).__init__()
+
+    @classmethod
+    def parse_content(cls, content, **kwargs):
+        return cls()
+
+    def to_json(self):
+        return {}

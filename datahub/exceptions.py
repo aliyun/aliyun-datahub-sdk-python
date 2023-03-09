@@ -118,6 +118,42 @@ class NoPermissionException(DatahubException):
         super(NoPermissionException, self).__init__(error_msg, status_code, request_id, error_code)
 
 
+class ShardSealedException(DatahubException):
+    """
+    The Shard has been sealed.
+    """
+
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
+        super(ShardSealedException, self).__init__(error_msg, status_code, request_id, error_code)
+
+
+class InvalidCursorException(DatahubException):
+    """
+    The cursor is invalid.
+    """
+
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
+        super(InvalidCursorException, self).__init__(error_msg, status_code, request_id, error_code)
+
+
+class SubscriptionOfflineException(DatahubException):
+    """
+    The cursor is invalid.
+    """
+
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
+        super(SubscriptionOfflineException, self).__init__(error_msg, status_code, request_id, error_code)
+
+
+class TimeoutException(DatahubException):
+    """
+    Timeout.
+    """
+
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
+        super(TimeoutException, self).__init__(error_msg, status_code, request_id, error_code)
+
+
 class ExceptionHandler(object):
     """
     The handler to throw exception according to error code
@@ -126,7 +162,7 @@ class ExceptionHandler(object):
         'InvalidUriSpec': InvalidParameterException,
         'InvalidParameter': InvalidParameterException,
         'InvalidSchema': InvalidParameterException,
-        'InvalidCursor': InvalidParameterException,
+        'InvalidCursor': InvalidCursorException,
         'InvalidSubscription': InvalidParameterException,
         'NoSuchProject': ResourceNotFoundException,
         'NoSuchTopic': ResourceNotFoundException,
@@ -135,7 +171,7 @@ class ExceptionHandler(object):
         'ProjectAlreadyExist': ResourceExistException,
         'TopicAlreadyExist': ResourceExistException,
         'ConnectorAlreadyExist': ResourceExistException,
-        'InvalidShardOperation': InvalidOperationException,
+        'InvalidShardOperation': ShardSealedException,
         'InvalidOperation': InvalidOperationException,
         'OperationDenied': InvalidOperationException,
         'LimitExceeded': LimitExceededException,
@@ -143,7 +179,7 @@ class ExceptionHandler(object):
         'InternalServerError': InternalServerException,
         'Unauthorized': AuthorizationFailedException,
         'NoPermission': NoPermissionException,
-        'SubscriptionOffline': InvalidOperationException,
+        'SubscriptionOffline': SubscriptionOfflineException,
         'OffsetReseted': OffsetResetException,
         'OffsetSessionClosed': InvalidOperationException,
         'OffsetSessionChanged': InvalidOperationException,

@@ -23,7 +23,7 @@ import time
 
 from six.moves import configparser
 
-from datahub import DataHub
+from datahub import DataHub, DatahubProtocolType
 from datahub.exceptions import ResourceExistException, InvalidOperationException
 from datahub.models import RecordSchema, FieldType, Field, TupleRecord, CursorType
 
@@ -46,7 +46,7 @@ if not access_id or not access_key or not endpoint:
     print("[access_id, access_key, endpoint] must be set in datahub.ini!")
     sys.exit(-1)
 
-dh = DataHub(access_id, access_key, endpoint)
+dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.BATCH)
 
 
 def clean_topic(datahub_client, project_name, force=False):

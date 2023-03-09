@@ -25,8 +25,10 @@ import json
 import six
 from cprotobuf.internal import encode_data
 
+from ..batch.batch_serializer import BatchSerializer
+from ..batch.utils import SchemaObject
 from ..models import CursorType, RecordType, RecordSchema
-from ..proto.datahub_record_proto_pb import PutRecordsRequest, GetRecordsRequest
+from ..proto.datahub_record_proto_pb import PutRecordsRequest, GetRecordsRequest, PutBinaryRecordsRequest
 from ..rest import ContentType, Headers
 from ..utils import pb_message_wrap
 
@@ -150,7 +152,7 @@ class CreateTopicRequestParams(RequestParams):
         return self._extend_mode
 
     @extend_mode.setter
-    def use(self, value):
+    def extend_mode(self, value):
         self._extend_mode = value
 
     @property
@@ -355,7 +357,6 @@ class PutPBRecordsRequestParams(PutRecordsRequestParams):
     """
     Protobuf Request params of put records api
     """
-
     def content(self):
         pb_put_record_request = {
             'records': []
@@ -370,6 +371,35 @@ class PutPBRecordsRequestParams(PutRecordsRequestParams):
         return {
             Headers.REQUEST_ACTION: PutRecordsRequestParams.action,
             Headers.CONTENT_TYPE: ContentType.HTTP_PROTOBUF.value
+        }
+
+
+class PutBatchRecordsRequestParams(PutRecordsRequestParams):
+    """
+    Batch Request params of put records api
+    """
+
+    def __init__(self, record_list, project_name, topic_name, compress_type, schema_register):
+        super().__init__(record_list)
+        self._project_name = project_name
+        self._topic_name = topic_name
+        self._compress_type = compress_type
+        self._schema_register = schema_register
+
+    def content(self):
+        schema_object = SchemaObject(self._project_name, self._topic_name, self._schema_register)
+        record_data = BatchSerializer.serialize(self._compress_type, schema_object, self._record_list)
+        batch_put_record_request = {
+            'records': [{'data': record_data}]
+        }
+        batch_data = encode_data(PutBinaryRecordsRequest, batch_put_record_request)
+        return pb_message_wrap(batch_data)
+
+    @staticmethod
+    def extra_headers():
+        return {
+            Headers.REQUEST_ACTION: PutRecordsRequestParams.action,
+            Headers.CONTENT_TYPE: ContentType.HTTP_BATCH.value
         }
 
 
@@ -428,6 +458,29 @@ class GetPBRecordsRequestParams(GetRecordsRequestParams):
         header = {
             Headers.REQUEST_ACTION: GetRecordsRequestParams.action,
             Headers.CONTENT_TYPE: ContentType.HTTP_PROTOBUF.value
+        }
+        if sub_id is not None:
+            header[Headers.CONTENT_SUB_ID] = sub_id
+        return header
+
+
+class GetBatchRecordsRequestParams(GetRecordsRequestParams):
+    """
+    Batch Request params of get records api
+    """
+    def content(self):
+        batch_get_record_request = {
+            'cursor': self._cursor,
+            'limit': self._limit_num
+        }
+        batch_data = encode_data(GetRecordsRequest, batch_get_record_request)
+        return pb_message_wrap(batch_data)
+
+    @staticmethod
+    def extra_headers(sub_id=None):
+        header = {
+            Headers.REQUEST_ACTION: GetRecordsRequestParams.action,
+            Headers.CONTENT_TYPE: ContentType.HTTP_BATCH.value
         }
         if sub_id is not None:
             header[Headers.CONTENT_SUB_ID] = sub_id
@@ -984,4 +1037,120 @@ class ResetSubscriptionOffsetParams(RequestParams):
         return json.dumps({
             "Action": "reset",
             "Offsets": offsets
+        })
+
+
+class ListTopicSchemaParams(RequestParams):
+    """
+    Request params of list topic schema
+    """
+    __slots__ = '_page_number', '_page_size'
+
+    def __init__(self, page_number, page_size):
+        self._page_number = page_number
+        self._page_size = page_size
+
+    @property
+    def page_number(self):
+        return self._page_number
+
+    @page_number.setter
+    def page_number(self, page_number):
+        self._page_number = page_number
+
+    @property
+    def page_size(self):
+        return self._page_size
+
+    @page_size.setter
+    def page_size(self, page_size):
+        self._page_size = page_size
+
+    def content(self):
+        return json.dumps({
+            "Action": "ListSchema",
+            "PageNumber": self._page_number,
+            "PageSize": self._page_size
+        })
+
+
+class GetTopicSchemaParams(RequestParams):
+    """
+    Request params of get topic schema
+    """
+    __slots__ = '_version_id', '_record_schema'
+
+    def __init__(self, version_id, record_schema):
+        self._version_id = version_id
+        self._record_schema = record_schema
+
+    @property
+    def version_id(self):
+        return self._version_id
+
+    @version_id.setter
+    def version_id(self, version_id):
+        self._version_id = version_id
+
+    @property
+    def record_schema(self):
+        return self._record_schema
+
+    @record_schema.setter
+    def record_schema(self, record_schema):
+        self._record_schema = record_schema
+
+    def content(self):
+        return json.dumps({
+            "Action": "GetSchema",
+            "VersionId": self._version_id,
+            "RecordSchema": self._record_schema.to_json_string() if self._record_schema else ""
+        })
+
+
+class RegisterTopicSchemaParams(RequestParams):
+    """
+    Request params of register topic schema
+    """
+    __slots__ = '_record_schema'
+
+    def __init__(self, record_schema):
+        self._record_schema = record_schema
+
+    @property
+    def record_schema(self):
+        return self._record_schema
+
+    @record_schema.setter
+    def record_schema(self, record_schema):
+        self._record_schema = record_schema
+
+    def content(self):
+        return json.dumps({
+            "Action": "RegisterSchema",
+            "RecordSchema": self._record_schema.to_json_string() if self._record_schema else ""
+        })
+
+
+class DeleteTopicSchemaParams(RequestParams):
+    """
+    Request params of delete topic schema
+    """
+    __slots__ = '_version_id', '_record_schema'
+
+    def __init__(self, version_id):
+        self._version_id = version_id
+
+    @property
+    def version_id(self):
+        return self._version_id
+
+    @version_id.setter
+    def version_id(self, version_id):
+        self._version_id = version_id
+
+    def content(self):
+        return json.dumps({
+            "Action": "DeleteSchema",
+            "VersionId": self._version_id
         })

@@ -5,6 +5,7 @@
   "Records": [
     {
       "SystemTime": 1526292424292,
+      "Sequence": 0,
       "NextCursor": "20000000000000000000000000140001",
       "Data": "iVBORw0KGgoAAAANSUhEUgAAB5FrTVeMB4wHjAeMBD3nAgEU"
     }

@@ -1,0 +1,6 @@
+{
+    "VersionId": 1,
+    "CreateTime": 160212718, 
+    "Creator": "", 
+    "RecordSchema": "{\"fields\": [{\"name\": \"bigint_field\", \"type\": \"bigint\"}, {\"name\": \"string_field\", \"type\": \"string\"}, {\"name\": \"double_field\", \"type\": \"double\"}, {\"name\": \"bool_field\", \"type\": \"boolean\"}, {\"name\": \"time_field\", \"type\": \"timestamp\"}]}"
+}

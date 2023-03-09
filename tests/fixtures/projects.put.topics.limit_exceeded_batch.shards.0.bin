@@ -1,0 +1,4 @@
+{
+  "ErrorCode": "LimitExceeded",
+  "ErrorMessage": "The query rate or throughput rate is exceeded."
+}

@@ -18,16 +18,20 @@
 # under the License.
 
 import time
+import urllib3
 
+from .batch.schema_registry_client import SchemaRegistryClient
 from .models.params import *
 from .models.results import *
 from .auth import AliyunAccount
 from .exceptions import InvalidParameterException, InvalidOperationException
-from .models import ShardState, OffsetBase, SubscriptionState, FieldType
+from .models import ShardState, OffsetBase, SubscriptionState, FieldType, OffsetWithSession
 from .rest import Path
 from .rest import RestClient
 from .utils import check_project_name_valid, check_topic_name_valid, check_type, check_positive, \
     to_text, ErrorMessage, check_empty, check_negative
+
+urllib3.disable_warnings()
 
 
 class DataHubJson(object):
@@ -35,9 +39,7 @@ class DataHubJson(object):
     Datahub json client
     """
 
-    MAX_WAITING_MILLISECOND = 120
-
-    def __init__(self, access_id, access_key, endpoint=None, compress_format=None, **kwargs):
+    def __init__(self, access_id, access_key, endpoint=None, compress_format=None, enable_schema_register=False, **kwargs):
         self._account = kwargs.pop('account', None)
         if self._account is None:
             security_token = kwargs.pop('security_token', '')
@@ -104,8 +106,10 @@ class DataHubJson(object):
     def create_blob_topic(self, project_name, topic_name, shard_count, life_cycle, extend_mode, comment):
         self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.BLOB, comment, extend_mode)
 
-    def create_tuple_topic(self, project_name, topic_name, shard_count, life_cycle, record_schema, extend_mode, comment):
-        self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.TUPLE, comment, extend_mode, record_schema)
+    def create_tuple_topic(self, project_name, topic_name, shard_count, life_cycle, record_schema, extend_mode,
+                           comment):
+        self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.TUPLE, comment, extend_mode,
+                            record_schema)
 
     def get_topic(self, project_name, topic_name):
         if check_empty(project_name):
@@ -491,6 +495,57 @@ class DataHubJson(object):
 
         self._rest_client.put(url, data=request_param.content())
 
+    def list_topic_schema(self, project_name, topic_name, page_number=-1, page_size=-1):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+
+        url = Path.TOPIC % (project_name, topic_name)
+        request_param = ListTopicSchemaParams(page_number, page_size)
+        content = self._rest_client.post(url, data=request_param.content())
+        result = ListTopicSchemaResult.parse_content(content)
+        return result
+
+    def get_topic_schema(self, project_name, topic_name, schema=None, version_id=-1):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+
+        if schema is None and version_id == -1:
+            raise InvalidParameterException("Error. Schema and version_id are both empty.")
+
+        url = Path.TOPIC % (project_name, topic_name)
+        request_param = GetTopicSchemaParams(version_id, schema)
+        content = self._rest_client.post(url, data=request_param.content())
+        result = GetTopicSchemaResult.parse_content(content)
+        return result
+
+    def register_topic_schema(self, project_name, topic_name, schema):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+
+        url = Path.TOPIC % (project_name, topic_name)
+        request_param = RegisterTopicSchemaParams(schema)
+        content = self._rest_client.post(url, data=request_param.content())
+        result = RegisterTopicSchemaResult.parse_content(content)
+        return result
+
+    def delete_topic_schema(self, project_name, topic_name, version_id):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+
+        url = Path.TOPIC % (project_name, topic_name)
+        request_param = DeleteTopicSchemaParams(version_id)
+        content = self._rest_client.post(url, data=request_param.content())
+        result = DeleteTopicSchemaResult.parse_content(content)
+        return result
+
     # =======================================================
     # internal api
     # =======================================================
@@ -672,18 +727,24 @@ class DataHubPB(DataHubJson):
     DataHub protobuf client
     """
 
+    def __init__(self, access_id, access_key, endpoint=None, compress_format=None, enable_schema_register=False, **kwargs):
+        super().__init__(access_id, access_key, endpoint, compress_format, enable_schema_register, **kwargs)
+
     def put_records(self, project_name, topic_name, record_list):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
 
+        if record_list is None or len(record_list) == 0:
+            raise InvalidParameterException("Record list is null or empty")
+
         url = Path.SHARDS % (project_name, topic_name)
 
         request_param = PutPBRecordsRequestParams(record_list)
 
         content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
-                                        compress_format=self._compress_format)
+                                         compress_format=self._compress_format)
 
         result = PutPBRecordsResult.parse_content(content)
 
@@ -697,12 +758,15 @@ class DataHubPB(DataHubJson):
         if check_empty(shard_id):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'shard_id')
 
+        if record_list is None or len(record_list) == 0:
+            raise InvalidParameterException("Record list is null or empty")
+
         url = Path.SHARD % (project_name, topic_name, shard_id)
 
         request_param = PutPBRecordsRequestParams(record_list)
 
         self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
-                                        compress_format=self._compress_format)
+                               compress_format=self._compress_format)
 
     def get_blob_records(self, project_name, topic_name, sub_id, shard_id, cursor, limit_num):
         return self.__get_records(project_name, topic_name, sub_id, shard_id, cursor, limit_num)
@@ -728,4 +792,59 @@ class DataHubPB(DataHubJson):
 
         result = GetPBRecordsResult.parse_content(content, record_schema=record_schema)
 
+        return result
+
+
+class DataHubBatch(DataHubJson):
+    """
+    DataHub batch client
+    """
+
+    def __init__(self, access_id, access_key, endpoint=None, compress_format=None, enable_schema_register=True, **kwargs):
+        super().__init__(access_id, access_key, endpoint, compress_format, enable_schema_register, **kwargs)
+        self._schema_register = SchemaRegistryClient(self) if enable_schema_register else None
+
+    def put_records(self, project_name, topic_name, record_list):
+        raise DatahubException("This method is not supported for batch client, please use put_records_by_shard")
+
+    def put_records_by_shard(self, project_name, topic_name, shard_id, record_list):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+        if check_empty(shard_id):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'shard_id')
+
+        if record_list is None or len(record_list) == 0:
+            raise InvalidParameterException("Record list is null or empty")
+
+        url = Path.SHARD % (project_name, topic_name, shard_id)
+        request_param = PutBatchRecordsRequestParams(record_list, project_name, topic_name, self._compress_format,
+                                                     self._schema_register)
+        self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers())
+
+    def get_blob_records(self, project_name, topic_name, sub_id, shard_id, cursor, limit_num):
+        return self.__get_records(project_name, topic_name, sub_id, shard_id, cursor, limit_num)
+
+    def get_tuple_records(self, project_name, topic_name, sub_id, shard_id, record_schema, cursor, limit_num):
+        return self.__get_records(project_name, topic_name, sub_id, shard_id, cursor, limit_num, record_schema)
+
+    def __get_records(self, project_name, topic_name, sub_id, shard_id, cursor, limit_num, record_schema=None):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+        if check_empty(shard_id):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'shard_id')
+        if check_empty(cursor):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'cursor')
+
+        url = Path.SHARD % (project_name, topic_name, shard_id)
+        request_param = GetBatchRecordsRequestParams(cursor, limit_num)
+
+        content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(sub_id),
+                                         compress_format=self._compress_format)
+        result = GetBatchRecordsResult.parse_content(content, record_schema=record_schema, project_name=project_name,
+                                                     topic_name=topic_name, init_schema=record_schema,
+                                                     schema_register=self._schema_register if record_schema else None)
         return result

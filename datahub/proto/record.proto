@@ -66,3 +66,28 @@ message GetRecordsResponse
     optional int64 start_sequence = 3;
     repeated RecordEntry records = 4;
 }
+
+message BinaryRecordEntry
+{
+    optional string cursor = 1;
+    optional string next_cursor = 2;
+    optional int64 sequence = 3;
+    optional int64 system_time = 4;
+    optional uint32 serial = 5 [default = 0];
+    optional bytes data = 6;
+}
+
+message PutBinaryRecordsRequest
+{
+    repeated BinaryRecordEntry records = 1;
+}
+
+message GetBinaryRecordsResponse
+{
+    required string next_cursor = 1;
+    required int32 record_count = 2;
+    optional int64 start_sequence = 3;
+    repeated BinaryRecordEntry records = 4;
+    optional int64 latest_sequence = 5 [default = -1];
+    optional int64 latest_time = 6 [default = -1];
+}

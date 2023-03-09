@@ -48,6 +48,25 @@ class PutRecordsRequest(ProtoEntity):
     records         = Field(RecordEntry,	1, repeated=True)
 
 
+class BinaryRecordEntry(ProtoEntity):
+    cursor          = Field('string',	1, required=False)
+    next_cursor     = Field('string',	2, required=False)
+    sequence        = Field('int64',	3, required=False)
+    system_time     = Field('int64',	4, required=False)
+    serial          = Field('uint32',	5, required=False)
+    data            = Field('bytes',	6, required=False)
+
+class PutBinaryRecordsRequest(ProtoEntity):
+    records         = Field(BinaryRecordEntry, 1, repeated=True)
+
+class GetBinaryRecordsResponse(ProtoEntity):
+    next_cursor     = Field('string',	1, required=True)
+    record_count    = Field('int32',	2, required=True)
+    start_sequence  = Field('int64',	3, required=False)
+    records         = Field(BinaryRecordEntry,	4, repeated=True)
+    latest_sequence = Field('int64',	5, required=False)
+    latest_time     = Field('int64',	6, required=False)
+
 
 
 

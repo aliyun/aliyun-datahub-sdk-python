@@ -1196,7 +1196,7 @@ class TestRecord:
             try:
                 dh_pb.put_records_by_shard(project_name, topic_name, "0", [wrong_record_2])
             except InvalidParameterException as e:
-                assert e.error_msg == 'Parse field[2]:a to DOUBLE failed: Cannot cast empty string to d'
+                assert e.error_msg == 'Parse field value [a] to DOUBLE failed: Cannot cast empty string to d'
 
             # ======================= project not existed =======================
             try:

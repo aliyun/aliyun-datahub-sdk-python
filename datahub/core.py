@@ -19,10 +19,28 @@
 
 from __future__ import absolute_import
 
+from enum import Enum
+
 from .utils import type_assert
-from .implement import DataHubJson, DataHubPB
+from .implement import DataHubJson, DataHubPB, DataHubBatch
 from .models import CompressFormat, RecordSchema, FieldType, CursorType, ConnectorType, ConnectorConfig,\
     ConnectorState, ConnectorOffset, SubscriptionState
+
+
+class DatahubProtocolType(Enum):
+    JSON = 'json'
+    PB = 'pb'
+    BATCH = 'batch'
+
+
+def get_client(protocol_type):
+    if not isinstance(protocol_type, DatahubProtocolType):
+        protocol_type = DatahubProtocolType.JSON
+    return {
+        DatahubProtocolType.JSON: DataHubJson,
+        DatahubProtocolType.PB: DataHubPB,
+        DatahubProtocolType.BATCH: DataHubBatch
+    }.get(protocol_type)
 
 
 class DataHub(object):
@@ -43,13 +61,17 @@ class DataHub(object):
     :param secret_access_key: Aliyun Access Key
     :param endpoint: Rest service URL
     :param enable_pb: enable protobuf when put/get records, default value is False in version <= 2.11, default value will be True in version >= 2.12
-    :param compress_format: compress format
+    :param protocol_type: protocol type. It is recommended to use this param, 'enable_pb' will no longer be supported in future versions
+    :type protocol_type: :class:`datahub.core.DatahubProtocolType`
+    :param compress_format: compress format, default value is NONE.
     :type compress_format: :class:`datahub.models.compress.CompressFormat`
+    :param enable_schema_register: enable schema register, only support in batch. default value is True in batch
 
     :Example:
 
     >>> datahub = DataHub('**your access id**', '**your access key**', '**endpoint**')
-    >>> datahub_pb = DataHub('**your access id**', '**your access key**', '**endpoint**', enable_pb=True)
+    >>> datahub_pb = DataHub('**your access id**', '**your access key**', '**endpoint**', protocol_type=DatahubProtocolType.PB)
+    >>> datahub_batch = DataHub('**your access id**', '**your access key**', '**endpoint**', protocol_type=DatahubProtocolType.BATCH, enable_schema_register=True)
     >>> datahub_lz4 = DataHub('**your access id**', '**your access key**', '**endpoint**', compress_format=CompressFormat.LZ4)
     >>>
     >>> project_result = datahub.get_project('datahub_test')
@@ -58,12 +80,13 @@ class DataHub(object):
     >>>
     """
 
-    def __init__(self, access_id, access_key, endpoint=None, enable_pb=True,
-                 compress_format=CompressFormat.NONE, **kwargs):
-        if enable_pb:
-            self._datahub_impl = DataHubPB(access_id, access_key, endpoint, compress_format, **kwargs)
-        else:
-            self._datahub_impl = DataHubJson(access_id, access_key, endpoint, compress_format, **kwargs)
+    def __init__(self, access_id, access_key, endpoint=None, compress_format=CompressFormat.LZ4, **kwargs):
+        protocol_type = DatahubProtocolType.JSON
+        if "enable_pb" in kwargs and kwargs.pop("enable_pb"):
+            protocol_type = DatahubProtocolType.PB
+        elif "protocol_type" in kwargs:
+            protocol_type = kwargs.pop("protocol_type")
+        self._datahub_impl = get_client(protocol_type)(access_id, access_key, endpoint, compress_format, **kwargs)
 
     def list_project(self):
         """
@@ -363,8 +386,8 @@ class DataHub(object):
         """
         return self._datahub_impl.put_records_by_shard(project_name, topic_name, shard_id, record_list)
 
-    @type_assert(object, str, str, str, str, int)
-    def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num, sub_id=None):
+    @type_assert(object, str, str, str, str, int, str)
+    def get_blob_records(self, project_name, topic_name, shard_id, cursor, limit_num=0, sub_id=None):
         """
         Get records from a topic
 
@@ -381,8 +404,8 @@ class DataHub(object):
         """
         return self._datahub_impl.get_blob_records(project_name, topic_name, sub_id, shard_id, cursor, limit_num)
 
-    @type_assert(object, str, str, str, RecordSchema, str, int)
-    def get_tuple_records(self, project_name, topic_name, shard_id, record_schema, cursor, limit_num, sub_id=None):
+    @type_assert(object, str, str, str, RecordSchema, str, int, str)
+    def get_tuple_records(self, project_name, topic_name, shard_id, record_schema=None, cursor="", limit_num=0, sub_id=None):
         """
         Get records from a topic
 
@@ -594,7 +617,7 @@ class DataHub(object):
         """
         self._datahub_impl.update_connector_offset(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, shard_id, connector_offset)
 
-    @type_assert(object, str, str, str)
+    @type_assert(object, str, str, str or list)
     def init_and_get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids):
         """
         Open subscription offset session
@@ -610,7 +633,7 @@ class DataHub(object):
         """
         return self._datahub_impl.init_and_get_subscription_offset(project_name, topic_name, sub_id, shard_ids)
 
-    @type_assert(object, str, str, str)
+    @type_assert(object, str, str, str or list)
     def get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids=None):
         """
         Get subscription offset
@@ -754,3 +777,61 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty; offsets is wrong type
         """
         self._datahub_impl.reset_subscription_offset(project_name, topic_name, sub_id, offsets)
+
+    @type_assert(object, str, str, int, int)
+    def list_topic_schema(self, project_name, topic_name, page_number=-1, page_size=-1):
+        """
+        List all schema of a topic
+
+        :param project_name: project_name
+        :param topic_name: topic_name
+        :param page_number: page number
+        :param page_size: page size
+        :return: all schema info of a topic
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty
+        """
+        return self._datahub_impl.list_topic_schema(project_name, topic_name, page_number, page_size)
+
+    @type_assert(object, str, str, RecordSchema, int)
+    def get_topic_schema(self, project_name, topic_name, schema=None, version_id=-1):
+        """
+        Get the special schema or version id of a topic
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param schema: schema
+        :param version_id: version id
+        :return: schema by version id or version id by schema
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty;
+        """
+        return self._datahub_impl.get_topic_schema(project_name, topic_name, schema, version_id)
+
+    @type_assert(object, str, str, RecordSchema)
+    def register_topic_schema(self, project_name, topic_name, schema):
+        """
+        Register schema in a topic
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param schema: schema
+        :return: version id
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty
+        """
+        return self._datahub_impl.register_topic_schema(project_name, topic_name, schema)
+
+    @type_assert(object, str, str, int)
+    def delete_topic_schema(self, project_name, topic_name, version_id):
+        """
+        Delete the special schema by version id of a topic
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param version_id: version id
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty
+        """
+        return self._datahub_impl.delete_topic_schema(project_name, topic_name, version_id)

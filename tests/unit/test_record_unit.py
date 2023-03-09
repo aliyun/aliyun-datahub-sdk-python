@@ -28,14 +28,14 @@ from httmock import HTTMock
 
 from datahub import DataHub
 from datahub.exceptions import ResourceNotFoundException, InvalidOperationException, \
-    InvalidParameterException, LimitExceededException
-from datahub.models import RecordSchema, FieldType, BlobRecord, TupleRecord
+    InvalidParameterException, LimitExceededException, ShardSealedException, InvalidCursorException
+from datahub.models import RecordSchema, FieldType, BlobRecord, TupleRecord, CompressFormat
 from datahub.proto.datahub_record_proto_pb import PutRecordsRequest, GetRecordsRequest
 from datahub.utils import unwrap_pb_frame, to_binary
 from .unittest_util import gen_mock_api, gen_pb_mock_api, _TESTS_PATH
 
-dh = DataHub('access_id', 'access_key', 'http://endpoint', enable_pb=False)
-dh2 = DataHub('access_id', 'access_key', 'http://endpoint', enable_pb=True)
+dh = DataHub('access_id', 'access_key', 'http://endpoint', enable_pb=False, compress_format=CompressFormat.NONE)
+dh2 = DataHub('access_id', 'access_key', 'http://endpoint', enable_pb=True, compress_format=CompressFormat.NONE)
 
 
 class TestRecord:
@@ -279,7 +279,7 @@ class TestRecord:
 
             with HTTMock(gen_mock_api(check)):
                 put_result = dh.put_records(project_name, topic_name, [record])
-        except InvalidOperationException:
+        except ShardSealedException:
             pass
         else:
             raise Exception('put data record success with invalid shard state!')
@@ -430,6 +430,7 @@ class TestRecord:
         assert get_result.start_seq == 0
         assert len(get_result.records) == 1
         assert get_result.records[0].system_time == 1526292424292
+        assert get_result.records[0].sequence == 0
         assert get_result.records[0].values == 'iVBORw0KGgoAAAANSUhEUgAAB5FrTVeMB4wHjAeMBD3nAgEU'
 
     def test_get_blob_record_pb_success(self):
@@ -457,6 +458,7 @@ class TestRecord:
         assert get_result.start_seq == 0
         assert len(get_result.records) == 1
         assert get_result.records[0].system_time == 1527161646886
+        assert get_result.records[0].sequence == 0
         assert get_result.records[0].values[:36] == 'iVBORw0KGgoAAAANSUhEUgAABRYAAAJYCAYA'
 
     def test_get_tuple_record_success(self):
@@ -486,6 +488,7 @@ class TestRecord:
         assert get_result.start_seq == 0
         assert len(get_result.records) == 1
         assert get_result.records[0].system_time == 1526293795168
+        assert get_result.records[0].sequence == 0
         assert get_result.records[0].values == (1, 'yc1', 10.01, False, 1455869335000000)
         assert get_result.records[0].attributes == {"string": "string"}
 
@@ -517,6 +520,7 @@ class TestRecord:
         assert get_result.start_seq == 0
         assert len(get_result.records) == 3
         assert get_result.records[0].system_time == 1527161792134
+        assert get_result.records[0].sequence == 0
         assert get_result.records[0].values == (99, 'yc1', 10.01, True, 1455869335000000)
         assert get_result.records[0].attributes == {}
         assert get_result.records[2].values == (99, 'yc2', 10.02, False, 1455869335000011)
@@ -542,7 +546,7 @@ class TestRecord:
 
             with HTTMock(gen_mock_api(check)):
                 get_result = dh.get_tuple_records(project_name, topic_name, shard_id, record_schema, cursor, limit_num)
-        except InvalidParameterException:
+        except InvalidCursorException:
             pass
         else:
             raise Exception('get data record success with invalid cursor!')

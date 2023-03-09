@@ -52,6 +52,7 @@ class HTTPMethod(Enum):
 class ContentType(Enum):
     HTTP_JSON = 'application/json'
     HTTP_PROTOBUF = 'application/x-protobuf'
+    HTTP_BATCH = 'application/x-binary'
 
 
 class Headers(object):

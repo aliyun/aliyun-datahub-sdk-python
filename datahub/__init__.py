@@ -19,7 +19,7 @@
 
 from __future__ import absolute_import
 
-from .core import DataHub
+from .core import DataHub, DatahubProtocolType
 from .version import __version__, __datahub_client_version__
 
 """ author
