@@ -37,7 +37,8 @@ life_cycle = 7
 record_type = RecordType.TUPLE
 record_schema = RecordSchema.from_lists(
     ['bigint_field', 'string_field', 'double_field', 'bool_field', 'time_field'],
-    [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
+    [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP],
+    ["bigint_comment", "string_comment", "double_comment", "boolean_comment", "timestamp_comment"])
 try:
     dh.create_project(project_name, 'comment')
     print("create project success!")

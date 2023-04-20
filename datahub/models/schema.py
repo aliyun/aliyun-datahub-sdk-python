@@ -55,15 +55,18 @@ class Field(object):
         name (:class:`str`): field name
 
         type (:class:`str`): field type
+
+        comment (:class:`str`): field comment
     """
 
-    __slots__ = ('_name', '_type', '_allow_null')
+    __slots__ = ('_name', '_type', '_comment', '_allow_null')
 
-    def __init__(self, name, field_type, allow_null=True):
+    def __init__(self, name, field_type, comment="", allow_null=True):
         if not check_type(field_type, FieldType):
             raise InvalidParameterException(ErrorMessage.INVALID_TYPE % ('field_type', FieldType.__name__))
         self._name = utils.to_str(name)
         self._type = field_type
+        self._comment = comment
         self._allow_null = allow_null
 
     @property
@@ -90,10 +93,19 @@ class Field(object):
     def allow_null(self, value):
         self._allow_null = value
 
+    @property
+    def comment(self):
+        return self._comment
+
+    @comment.setter
+    def comment(self, value):
+        self._comment = value
+
     def to_json(self):
         data = {
             "name": self._name,
-            "type": self._type.value
+            "type": self._type.value,
+            "comment": self._comment
         }
         if not self._allow_null:
             data["notnull"] = not self._allow_null
@@ -102,10 +114,11 @@ class Field(object):
     @classmethod
     def from_json(cls, field_json):
         allow_null = not field_json['notnull'] if 'notnull' in field_json else True
-        return cls(field_json['name'], FieldType(field_json['type'].lower()), allow_null)
+        comment = field_json['comment'] if 'comment' in field_json else ""
+        return cls(field_json['name'], FieldType(field_json['type'].lower()), comment, allow_null)
 
     def __repr__(self):
-        return '<field {0}, type {1}, allow_null {2}>'.format(self._name, self._type.name.lower(), self._allow_null)
+        return '<field {0}, type {1}, comment {2}, allow_null {3}>'.format(self._name, self._type.name.lower(), self._comment, self._allow_null)
 
 
 class RecordSchema(object):
@@ -175,13 +188,14 @@ class RecordSchema(object):
         return json.dumps(self.to_json())
 
     @classmethod
-    def from_lists(cls, names, types, allow_nulls=None):
-        if len(names) != len(types) or (allow_nulls and len(allow_nulls) != len(names)):
+    def from_lists(cls, names, types, comments=None, allow_nulls=None):
+        if len(names) != len(types) or (comments and len(comments) != len(names)) or (allow_nulls and len(allow_nulls) != len(names)):
             raise InvalidParameterException('Length of lists are not equal')
         field_list = []
         for index in range(0, len(names)):
             allow_null = allow_nulls[index] if allow_nulls else True
-            field_list.append(Field(names[index], types[index], allow_null))
+            comment = comments[index] if comments else ""
+            field_list.append(Field(names[index], types[index], comment, allow_null))
         return cls(field_list=field_list)
 
     @classmethod
