@@ -24,7 +24,7 @@ from .compress import CompressFormat
 from .shard import ShardState, Shard, ShardContext, ShardBase
 from .connector import ConnectorConfig, ConnectorShardStatus, AuthMode, ConnectorState, PartitionMode, \
     OdpsConnectorConfig, DatabaseConnectorConfig, EsConnectorConfig, FcConnectorConfig, OssConnectorConfig, \
-    OtsConnectorConfig, ConnectorState, OtsConnectorConfig, ConnectorType, ConnectorOffset
+    OtsConnectorConfig, HologresConnectorConfig, ConnectorType, ConnectorOffset
 from .subscription import OffsetBase, OffsetWithVersion, OffsetWithSession, SubscriptionState
 from .params import *
 from .results import *
