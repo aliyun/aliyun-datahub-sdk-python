@@ -8,7 +8,7 @@
 基础环境准备
 ============
 
-安装pip，可以参考 `地址 <https://pip.pypa.io/en/stable/installing/>`_ 。
+安装pip，可以参考 `地址 <https://pip.pypa.io/en/stable/installation/>`_ 。
 
 安装PyDatahub
 =============
