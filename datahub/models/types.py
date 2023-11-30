@@ -260,8 +260,8 @@ decimal_builtins = (decimal.Decimal,)
 try:
     import numpy as np
 
-    integer_builtins += (np.integer,)
-    float_builtins += (np.float,)
+    integer_builtins += (np.integer, )
+    float_builtins += (np.float16, np.float32, np.float64, np.float128, )
 except ImportError:
     pass
 
