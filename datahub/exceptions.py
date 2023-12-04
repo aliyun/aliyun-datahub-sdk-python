@@ -127,6 +127,15 @@ class ShardSealedException(DatahubException):
         super(ShardSealedException, self).__init__(error_msg, status_code, request_id, error_code)
 
 
+class SeekOutOfRangeException(DatahubException):
+    """
+    Offset seek out of range
+    """
+
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
+        super(SeekOutOfRangeException, self).__init__(error_msg, status_code, request_id, error_code)
+
+
 class InvalidCursorException(DatahubException):
     """
     The cursor is invalid.
@@ -172,6 +181,7 @@ class ExceptionHandler(object):
         'TopicAlreadyExist': ResourceExistException,
         'ConnectorAlreadyExist': ResourceExistException,
         'InvalidShardOperation': ShardSealedException,
+        'SeekOutOfRange': SeekOutOfRangeException,
         'InvalidOperation': InvalidOperationException,
         'OperationDenied': InvalidOperationException,
         'LimitExceeded': LimitExceededException,
