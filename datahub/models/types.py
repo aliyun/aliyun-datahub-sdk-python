@@ -262,6 +262,8 @@ try:
 
     integer_builtins += (np.integer, )
     float_builtins += (np.float16, np.float32, np.float64, np.float128, )
+    if np.__version__ < "1.20.0":
+        float_builtins += (np.float, )
 except ImportError:
     pass
 
