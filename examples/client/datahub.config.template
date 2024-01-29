@@ -1,0 +1,25 @@
+[datahub]
+endpoint =
+access_id =
+access_key =
+
+project_name =
+topic_name =
+sub_id =
+
+[common]
+retry_times =
+async_thread_limit =
+thread_queue_limit =
+
+[consumer]
+auto_ack_offset =
+session_timeout =
+fetch_limit =
+max_record_buffer_size =
+
+[producer]
+max_async_buffer_records =
+max_async_buffer_size =
+max_async_buffer_time =
+max_record_pack_queue_limit =
