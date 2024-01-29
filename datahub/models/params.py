@@ -287,6 +287,32 @@ class SplitShardRequestParams(RequestParams):
         })
 
 
+class ExtendShardRequestParams(RequestParams):
+    """
+    Request params of extend shard api
+    """
+
+    __slots__ = ('_shard_count')
+
+    def __init__(self, shard_count):
+        self._shard_count = shard_count
+
+    @property
+    def shard_count(self):
+        return self._shard_count
+
+    @shard_count.setter
+    def shard_count(self, value):
+        self._shard_count = value
+
+    def content(self):
+        return json.dumps({
+            "Action": "extend",
+            "ExtendMode": "TO",
+            "ShardNumber": self._shard_count
+        })
+
+
 class GetCursorRequestParams(RequestParams):
     """
     Request params of get cursor api

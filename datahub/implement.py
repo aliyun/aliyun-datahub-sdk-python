@@ -236,6 +236,19 @@ class DataHubJson(object):
         result = SplitShardResult.parse_content(content)
         return result
 
+    def extend_shard(self, project_name, topic_name, shard_count):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+        if not check_positive(shard_count):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_NOT_POSITIVE % 'shard_count')
+
+        url = Path.SHARDS % (project_name, topic_name)
+        request_param = ExtendShardRequestParams(shard_count)
+
+        self._rest_client.post(url, data=request_param.content())
+
     def get_cursor(self, project_name, topic_name, shard_id, cursor_type, param=-1):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')

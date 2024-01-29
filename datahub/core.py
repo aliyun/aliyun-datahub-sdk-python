@@ -324,6 +324,18 @@ class DataHub(object):
         """
         return self._datahub_impl.split_shard(project_name, topic_name, shard_id, split_key)
 
+    @type_assert(object, str, str, int)
+    def extend_shard(self, project_name, topic_name, shard_count):
+        """
+        Extend shard
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param shard_count: shard count extend to
+        :return: none
+        """
+        self._datahub_impl.extend_shard(project_name, topic_name, shard_count)
+
     @type_assert(object, str, str, str, CursorType, int)
     def get_cursor(self, project_name, topic_name, shard_id, cursor_type, param=-1):
         """
