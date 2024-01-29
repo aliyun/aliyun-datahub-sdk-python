@@ -24,6 +24,6 @@ from .version import __version__, __datahub_client_version__
 
 """ author
 """
-__author__ = 'andy.xs'
+__author__ = 'panjinxing.pjx'
 
 __all__ = ['DataHub', '__author__', '__version__', '__datahub_client_version__']

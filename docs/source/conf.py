@@ -57,7 +57,7 @@ master_doc = 'index'
 # General information about the project.
 project = u'PyDatahub'
 copyright = u'1999-2017, The Alibaba Group Holding Ltd'
-author = u'andy.xs'
+author = u'panjinxing.pjx'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
