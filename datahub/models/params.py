@@ -1066,6 +1066,176 @@ class ResetSubscriptionOffsetParams(RequestParams):
         })
 
 
+class JoinGroupParams(RequestParams):
+    """
+    Request params of join group
+    """
+
+    __slots__ = '_session_timeout'
+
+    def __init__(self, session_timeout):
+        self._session_timeout = session_timeout
+
+    @property
+    def session_timeout(self):
+        return self._session_timeout
+
+    @session_timeout.setter
+    def session_timeout(self, session_timeout):
+        self._session_timeout = session_timeout
+
+    def content(self):
+        return json.dumps({
+            "Action": "joinGroup",
+            "SessionTimeout": self._session_timeout
+        })
+
+
+class HeartBeatParams(RequestParams):
+    """
+    Request params of heart beat
+    """
+
+    __slots__ = '_consumer_id', '_version_id', '_hold_shard_list', '_read_end_shard_list'
+
+    def __init__(self, consumer_id, version_id, hold_shard_list, read_end_shard_list):
+        self._consumer_id = consumer_id
+        self._version_id = version_id
+        self._hold_shard_list = hold_shard_list
+        self._read_end_shard_list = read_end_shard_list
+
+    @property
+    def consumer_id(self):
+        return self._consumer_id
+
+    @consumer_id.setter
+    def consumer_id(self, consumer_id):
+        self._consumer_id = consumer_id
+
+    @property
+    def version_id(self):
+        return self._version_id
+
+    @version_id.setter
+    def version_id(self, version_id):
+        self._version_id = version_id
+
+    @property
+    def hold_shard_list(self):
+        return self._hold_shard_list
+
+    @hold_shard_list.setter
+    def hold_shard_list(self, hold_shard_list):
+        self._hold_shard_list = hold_shard_list
+
+    @property
+    def read_end_shard_list(self):
+        return self._read_end_shard_list
+
+    @read_end_shard_list.setter
+    def read_end_shard_list(self, read_end_shard_list):
+        self._read_end_shard_list = read_end_shard_list
+
+    def content(self):
+        return json.dumps({
+            "Action": "heartBeat",
+            "ConsumerId": self._consumer_id,
+            "VersionId": self._version_id,
+            "HoldShardList": self._hold_shard_list,
+            "ReadEndShardList": self._read_end_shard_list
+        })
+
+
+class SyncGroupParams(RequestParams):
+    """
+    Request params of sync group
+    """
+
+    __slots__ = '_consumer_id', '_version_id', '_release_shard_list', '_read_end_shard_list'
+
+    def __init__(self, consumer_id, version_id, release_shard_list, read_end_shard_list):
+        self._consumer_id = consumer_id
+        self._version_id = version_id
+        self._release_shard_list = release_shard_list
+        self._read_end_shard_list = read_end_shard_list
+
+    @property
+    def consumer_id(self):
+        return self._consumer_id
+
+    @consumer_id.setter
+    def consumer_id(self, consumer_id):
+        self._consumer_id = consumer_id
+
+    @property
+    def version_id(self):
+        return self._version_id
+
+    @version_id.setter
+    def version_id(self, version_id):
+        self._version_id = version_id
+
+    @property
+    def release_shard_list(self):
+        return self._release_shard_list
+
+    @release_shard_list.setter
+    def release_shard_list(self, release_shard_list):
+        self._release_shard_list = release_shard_list
+
+    @property
+    def read_end_shard_list(self):
+        return self._read_end_shard_list
+
+    @read_end_shard_list.setter
+    def read_end_shard_list(self, read_end_shard_list):
+        self._read_end_shard_list = read_end_shard_list
+
+    def content(self):
+        return json.dumps({
+            "Action": "syncGroup",
+            "ConsumerId": self._consumer_id,
+            "VersionId": self._version_id,
+            "ReleaseShardList": self._release_shard_list,
+            "ReadEndShardList": self._read_end_shard_list
+        })
+
+
+class LeaveGroupParams(RequestParams):
+    """
+    Request params of leave group
+    """
+
+    __slots__ = '_consumer_id', '_version_id'
+
+    def __init__(self, consumer_id, version_id):
+        self._consumer_id = consumer_id
+        self._version_id = version_id
+
+    @property
+    def consumer_id(self):
+        return self._consumer_id
+
+    @consumer_id.setter
+    def consumer_id(self, consumer_id):
+        self._consumer_id = consumer_id
+
+    @property
+    def version_id(self):
+        return self._version_id
+
+    @version_id.setter
+    def version_id(self, version_id):
+        self._version_id = version_id
+
+    def content(self):
+        return json.dumps({
+            "Action": "leaveGroup",
+            "ConsumerId": self._consumer_id,
+            "VersionId": self._version_id,
+        })
+
+
 class ListTopicSchemaParams(RequestParams):
     """
     Request params of list topic schema

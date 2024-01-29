@@ -790,6 +790,77 @@ class DataHub(object):
         """
         self._datahub_impl.reset_subscription_offset(project_name, topic_name, sub_id, offsets)
 
+    @type_assert(object, str, str, str, int)
+    def join_group(self, project_name, topic_name, consumer_group, session_timeout):
+        """
+        Join a consumer group
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param consumer_group: consumer group use sub_id you want to join
+        :param session_timeout: session timeout
+        :return: consumer id and version id
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or consumer_group not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or consumer_group is empty
+        """
+        return self._datahub_impl.join_group(project_name, topic_name, consumer_group, session_timeout)
+
+    @type_assert(object, str, str, str, str, int, list, list)
+    def heart_beat(self, project_name, topic_name, consumer_group, consumer_id, version_id, hold_shard_list,
+                  read_end_shard_list):
+        """
+        Construct heartbeat with server that server know consumer status
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param consumer_group: consumer group use sub_id you want to join
+        :param consumer_id: consumer id obtained at the time of join group
+        :param version_id: offset version id obtained at the time of join group
+        :param hold_shard_list: the shard list held by consumer
+        :param read_end_shard_list: the shard list have been read finished
+        :return: heartbeat result contains version id, shard list and total plan
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or consumer_group not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or consumer_group is empty; hold_shard_list is none
+        """
+        return self._datahub_impl.heart_beat(project_name, topic_name, consumer_group, consumer_id, version_id,
+                                            hold_shard_list, read_end_shard_list)
+
+    @type_assert(object, str, str, str, str, int, list, list)
+    def sync_group(self, project_name, topic_name, consumer_group, consumer_id, version_id, release_shard_list,
+                   read_end_shard_list):
+        """
+        Sync consumer group info
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param consumer_group: consumer group use sub_id you want to join
+        :param consumer_id: consumer id obtained at the time of join group
+        :param version_id: offset version id obtained at the time of join group
+        :param release_shard_list: the shard list to release
+        :param read_end_shard_list: the shard list have been read finished
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or consumer_group not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or consumer_group is empty
+        """
+        return self._datahub_impl.sync_group(project_name, topic_name, consumer_group, consumer_id, version_id,
+                                             release_shard_list, read_end_shard_list)
+
+    @type_assert(object, str, str, str, str, int)
+    def leave_group(self, project_name, topic_name, consumer_group, consumer_id, version_id):
+        """
+        Leave consumer group info
+
+        :param project_name: project name
+        :param topic_name: topic name
+        :param consumer_group: consumer group use sub_id you want to join
+        :param consumer_id: consumer id obtained at the time of join group
+        :param version_id: offset version id obtained at the time of join group
+        :return: none
+        :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or consumer_group not exists
+        :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or consumer_group is empty
+        """
+        return self._datahub_impl.leave_group(project_name, topic_name, consumer_group, consumer_id, version_id)
+
     @type_assert(object, str, str, int, int)
     def list_topic_schema(self, project_name, topic_name, page_number=-1, page_size=-1):
         """

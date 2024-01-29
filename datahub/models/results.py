@@ -1313,6 +1313,140 @@ class ListSubscriptionResult(Result):
         }
 
 
+class JoinGroupResult(Result):
+    """
+    Result of join group api
+    """
+
+    __slots__ = '_consumer_id', '_version_id', '_session_timeout'
+
+    def __init__(self, consumer_id, version_id, session_timeout):
+        self._consumer_id = consumer_id
+        self._version_id = version_id
+        self._session_timeout = session_timeout
+
+    @property
+    def consumer_id(self):
+        return self._consumer_id
+
+    @consumer_id.setter
+    def consumer_id(self, consumer_id):
+        self._consumer_id = consumer_id
+
+    @property
+    def version_id(self):
+        return self._version_id
+
+    @version_id.setter
+    def version_id(self, version_id):
+        self._version_id = version_id
+
+    @property
+    def session_timeout(self):
+        return self._session_timeout
+
+    @session_timeout.setter
+    def session_timeout(self, session_timeout):
+        self._session_timeout = session_timeout
+
+    @classmethod
+    def parse_content(cls, content, **kwargs):
+        content = json.loads(to_text(content))
+        consumer_id = content.get("ConsumerId", 0)
+        version_id = content.get("VersionId", 0)
+        session_timeout = content.get("SessionTimeout", 0)
+        return cls(consumer_id, version_id, session_timeout)
+
+    def to_json(self):
+        return {
+            "ConsumerId": self._consumer_id,
+            "VersionId": self._version_id,
+            "SessionTimeout": self._session_timeout
+        }
+
+
+class HeartBeatResult(Result):
+    """
+    Result of heart beat api
+    """
+
+    __slots__ = '_plan_version', '_shard_list', '_total_plan'
+
+    def __init__(self, plan_version, shard_list, total_plan):
+        self._plan_version = plan_version
+        self._shard_list = shard_list
+        self._total_plan = total_plan
+
+    @property
+    def plan_version(self):
+        return self._plan_version
+
+    @plan_version.setter
+    def plan_version(self, plan_version):
+        self._plan_version = plan_version
+
+    @property
+    def shard_list(self):
+        return self._shard_list
+
+    @shard_list.setter
+    def shard_list(self, shard_list):
+        self._shard_list = shard_list
+
+    @property
+    def total_plan(self):
+        return self._total_plan
+
+    @total_plan.setter
+    def total_plan(self, total_plan):
+        self._total_plan = total_plan
+
+    @classmethod
+    def parse_content(cls, content, **kwargs):
+        content = json.loads(to_text(content))
+        plan_version = content.get("PlanVersion", 0)
+        shard_list = content.get("ShardList", [])
+        total_plan = content.get("TotalPlan", "")
+        return cls(plan_version, shard_list, total_plan)
+
+    def to_json(self):
+        return {
+            "PlanVersion": self._plan_version,
+            "ShardList": self._shard_list,
+            "TotalPlan": self._total_plan
+        }
+
+
+class SyncGroupResult(Result):
+    """
+    Result of sync group api
+    """
+    def __int__(self):
+        super(SyncGroupResult, self).__init__()
+
+    @classmethod
+    def parse_content(cls, content, **kwargs):
+        return cls()
+
+    def to_json(self):
+        return {}
+
+
+class LeaveGroupResult(Result):
+    """
+    Result of leave group api
+    """
+    def __int__(self):
+        super(LeaveGroupResult, self).__init__()
+
+    @classmethod
+    def parse_content(cls, content, **kwargs):
+        return cls()
+
+    def to_json(self):
+        return {}
+
+
 class ListTopicSchemaResult(Result):
     """
     Result of list topic schema

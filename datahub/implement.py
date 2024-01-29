@@ -508,6 +508,66 @@ class DataHubJson(object):
 
         self._rest_client.put(url, data=request_param.content())
 
+    def join_group(self, project_name, topic_name, consumer_group, session_timeout):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+        if consumer_group is None or len(consumer_group) == 0:
+            raise InvalidParameterException("Consumer group format is invalid")
+
+        url = Path.SUBSCRIPTION % (project_name, topic_name, consumer_group)
+        request_param = JoinGroupParams(session_timeout)
+
+        content = self._rest_client.post(url, data=request_param.content())
+        result = JoinGroupResult.parse_content(content)
+        return result
+
+    def heart_beat(self, project_name, topic_name, consumer_group, consumer_id, version_id, hold_shard_list, read_end_shard_list):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+        if consumer_group is None or len(consumer_group) == 0:
+            raise InvalidParameterException("Consumer group format is invalid")
+
+        if hold_shard_list is None:
+            raise InvalidParameterException("Hold shard list is none")
+
+        url = Path.SUBSCRIPTION % (project_name, topic_name, consumer_group)
+        request_param = HeartBeatParams(consumer_id, version_id, hold_shard_list, read_end_shard_list)
+        content = self._rest_client.post(url, data=request_param.content())
+        result = HeartBeatResult.parse_content(content)
+        return result
+
+    def sync_group(self, project_name, topic_name, consumer_group, consumer_id, version_id, release_shard_list, read_end_shard_list):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+        if consumer_group is None or len(consumer_group) == 0:
+            raise InvalidParameterException("Consumer group format is invalid")
+
+        url = Path.SUBSCRIPTION % (project_name, topic_name, consumer_group)
+        request_param = SyncGroupParams(consumer_id, version_id, release_shard_list, read_end_shard_list)
+        content = self._rest_client.post(url, data=request_param.content())
+        result = SyncGroupResult.parse_content(content)
+        return result
+
+    def leave_group(self, project_name, topic_name, consumer_group, consumer_id, version_id):
+        if check_empty(project_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
+        if check_empty(topic_name):
+            raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
+        if consumer_group is None or len(consumer_group) == 0:
+            raise InvalidParameterException("Consumer group format is invalid")
+
+        url = Path.SUBSCRIPTION % (project_name, topic_name, consumer_group)
+        request_param = LeaveGroupParams(consumer_id, version_id)
+        content = self._rest_client.post(url, data=request_param.content())
+        result = LeaveGroupResult.parse_content(content)
+        return result
+
     def list_topic_schema(self, project_name, topic_name, page_number=-1, page_size=-1):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
