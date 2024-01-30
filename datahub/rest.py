@@ -143,12 +143,12 @@ def get_host_ip():
     return ip
 
 
-def default_user_agent():
+def default_user_agent(use_client):
     os_version = platform.platform()
     py_version = platform.python_version()
     ip_addr = get_host_ip()
     ua_template = Template('$pydatahub_version $python_version $os_version $ip_addr')
-    return ua_template.safe_substitute(pydatahub_version='pydatahub/%s' % __version__,
+    return ua_template.safe_substitute(pydatahub_version=('pyclient/%s' if use_client else 'pydatahub/%s') % __version__,
                                        python_version='python/%s' % py_version,
                                        os_version='%s' % os_version,
                                        ip_addr='ip/%s' % ip_addr)
@@ -159,12 +159,13 @@ class RestClient(object):
     """
 
     def __init__(self, account, endpoint, user_agent=None, proxies=None, stream=False, retry_times=3, conn_timeout=5,
-                 read_timeout=120, pool_connections=10, pool_maxsize=10, exception_handler_=exception_handler):
+                 read_timeout=120, pool_connections=10, pool_maxsize=10, exception_handler_=exception_handler,
+                 use_client=False):
         if endpoint.endswith('/'):
             endpoint = endpoint[:-1]
         self._account = account
         self._endpoint = endpoint
-        self._user_agent = user_agent or default_user_agent()
+        self._user_agent = user_agent or default_user_agent(use_client)
         self._proxies = proxies
         self._stream = stream
         self._retry_times = retry_times
