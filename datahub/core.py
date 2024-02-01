@@ -629,7 +629,7 @@ class DataHub(object):
         """
         self._datahub_impl.update_connector_offset(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, shard_id, connector_offset)
 
-    @type_assert(object, str, str, str or list)
+    @type_assert(object, str, str, (str, list), (str, list))
     def init_and_get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids):
         """
         Open subscription offset session
@@ -645,7 +645,7 @@ class DataHub(object):
         """
         return self._datahub_impl.init_and_get_subscription_offset(project_name, topic_name, sub_id, shard_ids)
 
-    @type_assert(object, str, str, str or list)
+    @type_assert(object, str, str, (str, list))
     def get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids=None):
         """
         Get subscription offset
