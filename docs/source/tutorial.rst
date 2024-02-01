@@ -73,4 +73,4 @@ Datahub Python SDK提供的所有API接口均由 ``datahub.DataHub`` 类实现�
     tutorial-connector
     tutorial-subscription
     tutorial-offset
-
+    tutorial-client

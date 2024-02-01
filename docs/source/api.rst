@@ -234,3 +234,25 @@ Exceptions
 
 .. autoclass:: datahub.exceptions.NoPermissionException
     :members:
+
+.. _producer:
+
+Producer
+==============
+
+.. autoclass:: datahub.client.ProducerConfig
+    :members:
+
+.. autoclass:: datahub.client.DatahubProducer
+    :members:
+
+.. _consumer:
+
+Consumer
+==============
+
+.. autoclass:: datahub.client.ConsumerConfig
+    :members:
+
+.. autoclass:: datahub.client.DatahubConsumer
+    :members:
