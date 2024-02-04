@@ -7,7 +7,7 @@
 </div>
 -----------------
 
-Elegant way to access Datahub Python SDK API. [Documentation](http://pydatahub.readthedocs.io/zh_CN/latest/)
+Elegant way to access Datahub Python SDK API. [Documentation](https://aliyun-datahub-sdk-python.readthedocs.io/en/latest/)
 
 ## Installation
 
@@ -55,8 +55,11 @@ Tested on Python 2.7, 3.3, 3.4, 3.5, 3.6 and pypy, Python 3.6 recommended
  * enum34 (>=1.1.5 for python_version < '3.4')
  * crcmod (>=1.7)
  * lz4 (>=2.0.0)
- * cprotobuf (==0.1.9)
+ * cprotobuf (>=0.1.9)
  * funcsigs (>=1.0.2)
+ * atomic>=0.7.0
+ * rwlock>=0.0.6
+ * urllib3>=1.26.10
 
 ## Run Tests
 
