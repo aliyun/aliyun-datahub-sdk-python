@@ -80,7 +80,7 @@ class DataHub(object):
     >>>
     """
 
-    def __init__(self, access_id, access_key, endpoint=None, compress_format=CompressFormat.LZ4, **kwargs):
+    def __init__(self, access_id, access_key, endpoint=None, compress_format=CompressFormat.DEFLATE, **kwargs):
         protocol_type = DatahubProtocolType.JSON
         if "enable_pb" in kwargs and kwargs.pop("enable_pb"):
             protocol_type = DatahubProtocolType.PB

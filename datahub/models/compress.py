@@ -25,7 +25,6 @@ import struct
 import zlib
 from enum import Enum
 
-import lz4.block
 import six
 
 from ..exceptions import DatahubException
@@ -33,18 +32,16 @@ from ..exceptions import DatahubException
 
 class CompressFormat(Enum):
     """
-    CompressFormat enum class, there are: ``NONE``, ``LZ4``, ``ZLIB``, ``DEFLATE``
+    CompressFormat enum class, there are: ``NONE``, ``ZLIB``, ``DEFLATE``
     """
     NONE = ''
     DEFLATE = 'deflate'
-    LZ4 = 'lz4'
     ZLIB = 'zlib'
 
     def get_index(self):
         return {
             CompressFormat.NONE: 0,
             CompressFormat.DEFLATE: 1,
-            CompressFormat.LZ4: 2,
             CompressFormat.ZLIB: 3
         }[self]
 
@@ -53,7 +50,6 @@ class CompressFormat(Enum):
         return {
             0: CompressFormat.NONE,
             1: CompressFormat.DEFLATE,
-            2: CompressFormat.LZ4,
             3: CompressFormat.ZLIB
         }[index]
 
@@ -92,22 +88,6 @@ class NoneCompressor(Compressor):
         return CompressFormat.NONE
 
 
-class Lz4Compressor(Compressor):
-    """
-    Lz4 compressor
-    """
-
-    def compress(self, data):
-        return lz4.block.compress(data, store_size=False)
-
-    def decompress(self, data, raw_size=-1):
-        size_header = struct.pack('<I', raw_size)
-        return lz4.block.decompress(size_header + data)
-
-    def compress_format(self):
-        return CompressFormat.LZ4
-
-
 class ZlibCompressor(Compressor):
     """
     Zlib compressor
@@ -139,14 +119,12 @@ class DeflateCompressor(Compressor):
 
 
 none_compressor = NoneCompressor()
-lz4_compressor = Lz4Compressor()
 zlib_compressor = ZlibCompressor()
 deflate_compressor = DeflateCompressor()
 
 _compressor_dict = {
     CompressFormat.NONE: none_compressor,
     CompressFormat.DEFLATE: deflate_compressor,
-    CompressFormat.LZ4: lz4_compressor,
     CompressFormat.ZLIB: zlib_compressor
 }
 

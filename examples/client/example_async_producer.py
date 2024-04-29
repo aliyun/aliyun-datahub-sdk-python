@@ -39,7 +39,7 @@ access_key       = parser.get("datahub", "access_key")
 project_name     = parser.get("datahub", "project_name")
 topic_name       = parser.get("datahub", "topic_name")
 protocol_type = DatahubProtocolType.PB
-compress_format = CompressFormat.LZ4
+compress_format = CompressFormat.DEFLATE
 
 retry_times = parser.get("common", "retry_times")
 retry_times = int(retry_times) if len(retry_times) > 0 else -1
