@@ -331,7 +331,7 @@ def _validate_builtin_value(value, data_type):
 
 
 def validate_value(value, field):
-    if field.allow_null and field.type != FieldType.STRING and value == '':
+    if field.allow_null and field.type != FieldType.STRING and (value == '' or value == b''):
         return None
     datahub_type = _datahub_types_dict[field.type]
     result = _validate_builtin_value(value, datahub_type)
