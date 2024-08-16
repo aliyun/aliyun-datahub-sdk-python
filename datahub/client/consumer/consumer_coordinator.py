@@ -155,7 +155,6 @@ class ConsumerCoordinator(OffsetCoordinator):
             self._logger.info("LeaveGroup success. key:{}".format(self._uniq_key))
         except DatahubException as e:
             self._logger.warning("LeaveGroup fail. key:{}. {}".format(self._uniq_key, e))
-            raise e
 
     def __start_heartbeat(self):
         if not self._heart_beat:

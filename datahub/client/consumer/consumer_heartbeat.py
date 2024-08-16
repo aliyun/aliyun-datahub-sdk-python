@@ -32,6 +32,7 @@ class ConsumerHeartbeat:
         self._logger = logging.getLogger(ConsumerHeartbeat.__name__)
         self._closed = False
         self._offset_reset = False
+        self._need_rejoin = False
         self._coordinator = coordinator
         self._sync_group_meta = sync_group_meta
         self._consumer_id = consumer_id
@@ -53,6 +54,9 @@ class ConsumerHeartbeat:
         return not self._sync_group_meta.get_valid_shards()
 
     def need_rejoin(self):
+        if self._need_rejoin:
+            self._need_rejoin = False
+            return True
         if self._offset_reset:
             self._offset_reset = False
             return True
@@ -121,8 +125,11 @@ class ConsumerHeartbeat:
                 self._coordinator.on_offset_reset()
             except DatahubException as e:
                 if "NoSuchSubscription" == e.error_code:
-                    self._logger.warning("CommitOffset fail, subscription deleted. key:{}. {}".format(self._coordinator.uniq_key, e))
+                    self._logger.warning("Consumer heartbeat fail, subscription deleted. key:{}. {}".format(self._coordinator.uniq_key, e))
                     self._coordinator.on_sub_deleted()
+                elif "NoSuchConsumer" == e.error_code:
+                    self._logger.warning("Consumer heartbeat fail, consumer not in group. key:{}. {}".format(self._coordinator.uniq_key, e))
+                    self._need_rejoin = True
                 else:
                     self._logger.warning("Consumer heartbeat fail in DatahubException. key:{}. {}".format(self._coordinator.uniq_key, e))
             except Exception as e:
