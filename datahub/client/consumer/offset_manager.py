@@ -212,3 +212,7 @@ class OffsetRequest:
     @property
     def message_key(self):
         return self._message_key
+
+    @property
+    def timestamp(self):
+        return self._timestamp
