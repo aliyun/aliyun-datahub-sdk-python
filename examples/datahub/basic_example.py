@@ -24,14 +24,29 @@ import traceback
 from datahub import DataHub, DatahubProtocolType
 from datahub.exceptions import ResourceExistException, DatahubException
 from datahub.models import FieldType, RecordSchema, TupleRecord, BlobRecord, CursorType, RecordType
+from alibabacloud_credentials.client import Client
+from alibabacloud_credentials.models import Config
 
 access_id = ''
 access_key = ''
 endpoint = ''
 
+# ===================== 构建DataHub =====================
+
+# 方式一. 直接使用AK构建
 dh = DataHub(access_id, access_key, endpoint)                                                   # Json
 # dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.PB)           # Pb
 # dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.BATCH)        # Batch
+
+# 方式二 (推荐). 使用零信任凭证构建 (credential构建方式可参考 https://github.com/aliyun/credentials-python/ )
+config = Config(
+    type='sts',                           # credential type
+    access_key_id='accessKeyId',          # AccessKeyId
+    access_key_secret='accessKeySecret',  # AccessKeySecret
+    security_token='securityToken'        # STS Token
+)
+credential = Client(config)
+dh2 = DataHub("", "", endpoint, credential=credential)
 
 # ===================== 创建project =====================
 project_name = 'project'

@@ -80,13 +80,13 @@ class DataHub(object):
     >>>
     """
 
-    def __init__(self, access_id, access_key, endpoint=None, compress_format=CompressFormat.LZ4, **kwargs):
+    def __init__(self, access_id, access_key, endpoint=None, compress_format=CompressFormat.LZ4, credential=None, **kwargs):
         protocol_type = DatahubProtocolType.JSON
         if "enable_pb" in kwargs and kwargs.pop("enable_pb"):
             protocol_type = DatahubProtocolType.PB
         elif "protocol_type" in kwargs:
             protocol_type = kwargs.pop("protocol_type")
-        self._datahub_impl = get_client(protocol_type)(access_id, access_key, endpoint, compress_format, **kwargs)
+        self._datahub_impl = get_client(protocol_type)(access_id, access_key, endpoint, compress_format, credential=credential, **kwargs)
 
     def list_project(self):
         """

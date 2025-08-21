@@ -54,6 +54,7 @@ class AliyunAccount(Account):
         self._access_id = kwargs.get('access_id', '').strip()
         self._access_key = kwargs.get('access_key', '').strip()
         self._security_token = kwargs.get('security_token', '').strip()
+        self._credential = kwargs.get('credential', None)
 
     @property
     def access_id(self):
@@ -78,6 +79,14 @@ class AliyunAccount(Account):
     @security_token.setter
     def security_token(self, value):
         self._security_token = value
+
+    @property
+    def credential(self):
+        return self._credential
+
+    @credential.setter
+    def credential(self, value):
+        self._credential = value
 
     def get_type(self):
         """
@@ -133,7 +142,14 @@ class AliyunAccount(Account):
         canonical_str = self._build_canonical_str(url_components, request)
         logger.debug('canonical string: ' + canonical_str)
 
-        sign = to_str(hmac_sha1(self._access_key, canonical_str))
+        if self._credential is None:
+            access_id = self.access_id
+            access_key = self.access_key
+        else:
+            credential = self._credential.get_credential()
+            access_id = credential.get_access_key_id()
+            access_key = credential.get_access_key_secret()
 
-        auth_str = 'DATAHUB %s:%s' % (self._access_id, sign)
+        sign = to_str(hmac_sha1(access_key, canonical_str))
+        auth_str = 'DATAHUB %s:%s' % (access_id, sign)
         request.headers[Headers.AUTHORIZATION] = auth_str

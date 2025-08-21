@@ -39,11 +39,11 @@ class DataHubJson(object):
     Datahub json client
     """
 
-    def __init__(self, access_id, access_key, endpoint=None, compress_format=None, enable_schema_register=False, **kwargs):
+    def __init__(self, access_id, access_key, endpoint=None, compress_format=None, enable_schema_register=False, credential=None, **kwargs):
         self._account = kwargs.pop('account', None)
         if self._account is None:
             security_token = kwargs.pop('security_token', '')
-            self._account = AliyunAccount(access_id=access_id, access_key=access_key, security_token=security_token)
+            self._account = AliyunAccount(access_id=access_id, access_key=access_key, security_token=security_token, credential=credential)
         self._endpoint = endpoint
         self._compress_format = compress_format
         self._rest_client = RestClient(self._account, self._endpoint, **kwargs)
@@ -800,8 +800,8 @@ class DataHubPB(DataHubJson):
     DataHub protobuf client
     """
 
-    def __init__(self, access_id, access_key, endpoint=None, compress_format=None, enable_schema_register=False, **kwargs):
-        super().__init__(access_id, access_key, endpoint, compress_format, enable_schema_register, **kwargs)
+    def __init__(self, access_id, access_key, endpoint=None, compress_format=None, enable_schema_register=False, credential=None, **kwargs):
+        super().__init__(access_id, access_key, endpoint, compress_format, enable_schema_register, credential=credential, **kwargs)
 
     def put_records(self, project_name, topic_name, record_list):
         if check_empty(project_name):
@@ -873,8 +873,8 @@ class DataHubBatch(DataHubJson):
     DataHub batch client
     """
 
-    def __init__(self, access_id, access_key, endpoint=None, compress_format=None, enable_schema_register=True, **kwargs):
-        super().__init__(access_id, access_key, endpoint, compress_format, enable_schema_register, **kwargs)
+    def __init__(self, access_id, access_key, endpoint=None, compress_format=None, enable_schema_register=True, credential=None, **kwargs):
+        super().__init__(access_id, access_key, endpoint, compress_format, enable_schema_register, credential=credential, **kwargs)
         self._schema_register = SchemaRegistryClient(self) if enable_schema_register else None
 
     def put_records(self, project_name, topic_name, record_list):
