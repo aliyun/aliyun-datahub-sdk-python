@@ -34,6 +34,7 @@ from .subscription import Subscription, OffsetWithBatchIndex
 from ..batch.batch_serializer import BatchSerializer
 from ..batch.utils import SchemaObject
 from ..proto.datahub_record_proto_pb import GetRecordsResponse, PutRecordsResponse, GetBinaryRecordsResponse
+from ..rest import Headers
 from ..utils import to_text, unwrap_pb_frame
 
 
@@ -43,14 +44,25 @@ class Result(object):
     Abstract class to be implement
     """
 
+    def __init__(self, request_id):
+        self._request_id = request_id
+
     @classmethod
     @abc.abstractmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         pass
 
     @abc.abstractmethod
     def to_json(self):
         pass
+
+    @property
+    def request_id(self):
+        return self._request_id
+
+    @request_id.setter
+    def request_id(self, value):
+        self._request_id = value
 
     def __repr__(self):
         return to_text(self.to_json())
@@ -66,7 +78,8 @@ class ListProjectResult(Result):
 
     __slots__ = '_project_names'
 
-    def __init__(self, project_names):
+    def __init__(self, project_names, request_id):
+        super().__init__(request_id)
         self._project_names = project_names
 
     @property
@@ -78,9 +91,9 @@ class ListProjectResult(Result):
         self._project_names = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['ProjectNames'])
+        return cls(content['ProjectNames'], headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -104,7 +117,8 @@ class GetProjectResult(Result):
 
     __slots__ = ('_project_name', '_comment', '_create_time', '_last_modify_time')
 
-    def __init__(self, project_name, comment, create_time, last_modify_time):
+    def __init__(self, project_name, comment, create_time, last_modify_time, request_id):
+        super().__init__(request_id)
         self._project_name = project_name
         self._comment = comment
         self._create_time = create_time
@@ -143,9 +157,9 @@ class GetProjectResult(Result):
         self._last_modify_time = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
-        return cls(kwargs['project_name'], content['Comment'], content['CreateTime'], content['LastModifyTime'])
+        return cls(kwargs['project_name'], content['Comment'], content['CreateTime'], content['LastModifyTime'], headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -166,7 +180,8 @@ class ListTopicResult(Result):
 
     __slots__ = '_topic_names'
 
-    def __init__(self, topic_names):
+    def __init__(self, topic_names, request_id):
+        super().__init__(request_id)
         self._topic_names = topic_names
 
     @property
@@ -178,9 +193,9 @@ class ListTopicResult(Result):
         self._topic_names = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['TopicNames'])
+        return cls(content['TopicNames'], headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -215,16 +230,18 @@ class GetTopicResult(Result):
     __slots__ = ('_project_name', '_topic_name', '_shard_count', '_life_cycle', '_record_type', '_record_schema',
                  '_comment', '_create_time', '_last_modify_time')
 
-    def __init__(self, **kwargs):
-        self._project_name = kwargs['project_name'] if 'project_name' in kwargs else ''
-        self._topic_name = kwargs['topic_name'] if 'topic_name' in kwargs else ''
-        self._shard_count = kwargs['shard_count'] if 'shard_count' in kwargs else 0
-        self._life_cycle = kwargs['life_cycle'] if 'life_cycle' in kwargs else 0
-        self._record_type = RecordType(kwargs['record_type']) if 'record_type' in kwargs else ''
-        self._record_schema = kwargs['record_schema'] if 'record_schema' in kwargs else None
-        self._comment = kwargs['comment'] if 'comment' in kwargs else ''
-        self._create_time = kwargs['create_time'] if 'create_time' in kwargs else 0
-        self._last_modify_time = kwargs['last_modify_time'] if 'last_modify_time' in kwargs else 0
+    def __init__(self, project_name, topic_name, comment, shard_count, life_cycle, record_type, record_schema,
+                 create_time, last_modify_time, request_id):
+        super().__init__(request_id)
+        self._project_name = project_name
+        self._topic_name = topic_name
+        self._comment = comment
+        self._shard_count = shard_count
+        self._life_cycle = life_cycle
+        self._record_type = record_type
+        self._record_schema = record_schema
+        self._create_time = create_time
+        self._last_modify_time = last_modify_time
 
     @property
     def project_name(self):
@@ -299,16 +316,23 @@ class GetTopicResult(Result):
         self._last_modify_time = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
+        project_name = kwargs['project_name'] if 'project_name' in kwargs else ''
+        topic_name = kwargs['topic_name'] if 'topic_name' in kwargs else ''
+
         content = json.loads(to_text(content))
+        comment = content.get('Comment', '')
+        shard_count = content.get('ShardCount', 0)
+        life_cycle = content.get('Lifecycle', 0)
+        create_time = content.get('CreateTime', 0)
+        last_modify_time = content.get('LastModifyTime', 0)
+
         record_schema = None
         record_type = RecordType(content['RecordType'])
         if record_type == RecordType.TUPLE:
             record_schema = RecordSchema.from_json_str(content['RecordSchema'])
-        return cls(project_name=kwargs['project_name'], topic_name=kwargs['topic_name'],
-                   comment=content['Comment'], create_time=content['CreateTime'],
-                   last_modify_time=content['LastModifyTime'], life_cycle=content['Lifecycle'],
-                   record_type=record_type, record_schema=record_schema, shard_count=content['ShardCount'])
+        return cls(project_name, topic_name, comment, shard_count, life_cycle, record_type, record_schema,
+                   create_time, last_modify_time, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         data = {
@@ -336,7 +360,8 @@ class ListShardResult(Result):
 
     __slots__ = '_shards', '_protocol', '_interval'
 
-    def __init__(self, shards, protocol, interval):
+    def __init__(self, shards, protocol, interval, request_id):
+        super().__init__(request_id)
         self._shards = shards
         self._protocol = protocol
         self._interval = interval
@@ -366,12 +391,12 @@ class ListShardResult(Result):
         self._interval = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         shards = [Shard.from_dict(item) for item in content['Shards']]
         protocol = content['Protocol']
         interval = content['Interval']
-        return cls(shards, protocol, interval)
+        return cls(shards, protocol, interval, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -395,13 +420,14 @@ class MergeShardResult(ShardBase, Result):
 
     __slots__ = ('_shard_id', '_begin_hash_key', '_end_hash_key')
 
-    def __init__(self, shard_id, begin_hash_key, end_hash_key):
+    def __init__(self, shard_id, begin_hash_key, end_hash_key, request_id):
+        super(Result, self).__init__(request_id)
         super(MergeShardResult, self).__init__(shard_id, begin_hash_key, end_hash_key)
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['ShardId'], content['BeginHashKey'], content['EndHashKey'])
+        return cls(content['ShardId'], content['BeginHashKey'], content['EndHashKey'], headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return super(MergeShardResult, self).to_json()
@@ -417,7 +443,8 @@ class SplitShardResult(Result):
 
     __slots__ = '_new_shards'
 
-    def __init__(self, new_shards):
+    def __init__(self, new_shards, request_id):
+        super().__init__(request_id)
         self._new_shards = new_shards
 
     @property
@@ -429,10 +456,10 @@ class SplitShardResult(Result):
         self._new_shards = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         new_shards = [ShardBase.from_dict(item) for item in content['NewShards']]
-        return cls(new_shards)
+        return cls(new_shards, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -454,7 +481,8 @@ class GetCursorResult(Result):
 
     __slots__ = ('_cursor', '_record_time', '_sequence')
 
-    def __init__(self, cursor, record_time, sequence):
+    def __init__(self, cursor, record_time, sequence, request_id):
+        super().__init__(request_id)
         self._cursor = cursor
         self._record_time = record_time
         self._sequence = sequence
@@ -484,9 +512,9 @@ class GetCursorResult(Result):
         self._sequence = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['Cursor'], content['RecordTime'], content['Sequence'])
+        return cls(content['Cursor'], content['RecordTime'], content['Sequence'], headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -508,7 +536,8 @@ class PutRecordsResult(Result):
 
     __slots__ = ('_failed_record_count', '_failed_records')
 
-    def __init__(self, failed_record_count, failed_records):
+    def __init__(self, failed_record_count, failed_records, request_id):
+        super().__init__(request_id)
         self._failed_record_count = failed_record_count
         self._failed_records = failed_records
 
@@ -529,13 +558,13 @@ class PutRecordsResult(Result):
         self._failed_records = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         failed_records = [
             FailedRecord(item['Index'], item['ErrorCode'], item['ErrorMessage'])
             for item in content['FailedRecords']
         ]
-        return cls(content['FailedRecordCount'], failed_records)
+        return cls(content['FailedRecordCount'], failed_records, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -550,7 +579,7 @@ class PutPBRecordsResult(PutRecordsResult):
     """
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         crc, compute_crc, pb_str = unwrap_pb_frame(content)
         if crc != compute_crc:
             raise DatahubException('Parse pb response body fail, error: crc check error. crc: %s, compute crc: %s'
@@ -559,7 +588,7 @@ class PutPBRecordsResult(PutRecordsResult):
         pb_put_record_response.ParseFromString(pb_str)
         pb_failed_records = pb_put_record_response.failed_records
         failed_records = [FailedRecord.from_pb_message(pb_failed_record) for pb_failed_record in pb_failed_records]
-        return cls(pb_put_record_response.failed_count, failed_records)
+        return cls(pb_put_record_response.failed_count, failed_records, headers.get(Headers.REQUEST_ID, ''))
 
 
 class GetRecordsResult(Result):
@@ -578,7 +607,8 @@ class GetRecordsResult(Result):
 
     __slots__ = ('_next_cursor', '_record_count', '_start_seq', '_records')
 
-    def __init__(self, next_cursor, record_count, start_seq, records):
+    def __init__(self, next_cursor, record_count, start_seq, records, request_id):
+        super().__init__(request_id)
         self._next_cursor = next_cursor
         self._record_count = record_count
         self._start_seq = start_seq
@@ -617,7 +647,7 @@ class GetRecordsResult(Result):
         self._records = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
 
         records = []
@@ -633,7 +663,7 @@ class GetRecordsResult(Result):
             record.sequence = item['Sequence']
             record.system_time = item['SystemTime']
             records.append(record)
-        return cls(content['NextCursor'], content['RecordCount'], content['StartSeq'], records)
+        return cls(content['NextCursor'], content['RecordCount'], content['StartSeq'], records, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -650,7 +680,7 @@ class GetPBRecordsResult(GetRecordsResult):
     """
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         crc, compute_crc, pb_str = unwrap_pb_frame(content)
         if crc != compute_crc:
             raise DatahubException('Parse pb response body fail, error: crc check error. crc: %s, compute crc: %s'
@@ -676,7 +706,7 @@ class GetPBRecordsResult(GetRecordsResult):
             record.system_time = pb_record.system_time
             record.sequence = pb_record.sequence
             records.append(record)
-        return cls(next_cursor, record_count, start_sequence, records)
+        return cls(next_cursor, record_count, start_sequence, records, headers.get(Headers.REQUEST_ID, ''))
 
 
 class GetBatchRecordsResult(GetRecordsResult):
@@ -685,7 +715,7 @@ class GetBatchRecordsResult(GetRecordsResult):
     """
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         crc, compute_crc, pb_str = unwrap_pb_frame(content)
         if crc != compute_crc:
             raise DatahubException('Parse pb response body fail, error: crc check error. crc: %s, compute crc: %s'
@@ -716,7 +746,7 @@ class GetBatchRecordsResult(GetRecordsResult):
                 index += 1
             total_records_list += records_list
             record_count += records_len
-        return cls(next_cursor, record_count, start_sequence, total_records_list)
+        return cls(next_cursor, record_count, start_sequence, total_records_list, headers.get(Headers.REQUEST_ID, ''))
 
 
 class GetMeteringInfoResult(Result):
@@ -731,7 +761,8 @@ class GetMeteringInfoResult(Result):
 
     __slots__ = ('_active_time', '_storage')
 
-    def __init__(self, active_time, storage):
+    def __init__(self, active_time, storage, request_id):
+        super().__init__(request_id)
         self._active_time = active_time
         self._storage = storage
 
@@ -752,9 +783,9 @@ class GetMeteringInfoResult(Result):
         self._storage = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['ActiveTime'], content['Storage'])
+        return cls(content['ActiveTime'], content['Storage'], headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -773,7 +804,8 @@ class ListConnectorResult(Result):
 
     __slots__ = '_connector_names'
 
-    def __init__(self, connector_names, connector_ids):
+    def __init__(self, connector_names, connector_ids, request_id):
+        super().__init__(request_id)
         self._connector_names = connector_names
         self._connector_ids = connector_ids
 
@@ -794,9 +826,9 @@ class ListConnectorResult(Result):
         self._connector_ids = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['Connectors'], content['Connectors'])
+        return cls(content['Connectors'], content['Connectors'], headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -814,7 +846,8 @@ class CreateConnectorResult(Result):
 
     __slots__ = '_connector_id'
 
-    def __init__(self, connector_id):
+    def __init__(self, connector_id, request_id):
+        super().__init__(request_id)
         self._connector_id = connector_id
 
     @property
@@ -826,9 +859,9 @@ class CreateConnectorResult(Result):
         self._connector_id = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content.get('ConnectorId', ''))
+        return cls(content.get('ConnectorId', ''), headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -871,7 +904,8 @@ class GetConnectorResult(Result):
         '_config', '_extra_config', '_shard_contexts', '_sub_id')
 
     def __init__(self, cluster_addr, connector_id, connector_type, state, creator, owner, create_time, column_fields,
-                 config, extra_config, shard_contexts, sub_id):
+                 config, extra_config, shard_contexts, sub_id, request_id):
+        super().__init__(request_id)
         self._cluster_addr = cluster_addr
         self._connector_id = connector_id
         self._type = connector_type
@@ -982,7 +1016,7 @@ class GetConnectorResult(Result):
         self._sub_id = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         cluster_addr = content.get('ClusterAddress', '')
         connector_id = content.get('ConnectorId', '')
@@ -997,7 +1031,7 @@ class GetConnectorResult(Result):
         shard_contexts = [ShardContext.from_dict(item) for item in content['ShardContexts']]  # deprecated
         sub_id = extra_config.get('SubscriptionId', '')
         return cls(cluster_addr, connector_id, connector_type, state, creator, owner, create_time, column_fields,
-                   connector_config, extra_config, shard_contexts, sub_id)
+                   connector_config, extra_config, shard_contexts, sub_id, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -1024,7 +1058,8 @@ class GetConnectorShardStatusResult(Result):
 
     __slots__ = '_shard_status_infos'
 
-    def __init__(self, shard_status_infos):
+    def __init__(self, shard_status_infos, request_id):
+        super().__init__(request_id)
         self._shard_status_infos = shard_status_infos
 
     @property
@@ -1036,7 +1071,7 @@ class GetConnectorShardStatusResult(Result):
         self._shard_status_infos = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         shard_status_infos = {}
         if 'ShardStatusInfos' in content:
@@ -1046,7 +1081,7 @@ class GetConnectorShardStatusResult(Result):
                 })
         else:
             shard_status_infos[content['ShardId']] = ShardStatusEntry.from_dict(content)
-        return cls(shard_status_infos)
+        return cls(shard_status_infos, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         shard_status_infos = {}
@@ -1069,7 +1104,8 @@ class InitAndGetSubscriptionOffsetResult(Result):
 
     __slots__ = '_offsets'
 
-    def __init__(self, offsets):
+    def __init__(self, offsets, request_id):
+        super().__init__(request_id)
         self._offsets = offsets
 
     @property
@@ -1081,14 +1117,14 @@ class InitAndGetSubscriptionOffsetResult(Result):
         self._offsets = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         offsets = {}
         for (k, v) in content['Offsets'].items():
             offsets.update({
                 k: OffsetWithBatchIndex.from_dict(v)
             })
-        return cls(offsets)
+        return cls(offsets, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         offsets = {}
@@ -1111,7 +1147,8 @@ class GetSubscriptionOffsetResult(Result):
 
     __slots__ = '_offsets'
 
-    def __init__(self, offsets):
+    def __init__(self, offsets, request_id):
+        super().__init__(request_id)
         self._offsets = offsets
 
     @property
@@ -1123,14 +1160,14 @@ class GetSubscriptionOffsetResult(Result):
         self._offsets = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         offsets = {}
         for (k, v) in content['Offsets'].items():
             offsets.update({
                 k: OffsetWithBatchIndex.from_dict(v)
             })
-        return cls(offsets)
+        return cls(offsets, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         offsets = {}
@@ -1157,7 +1194,8 @@ class GetConnectorDoneTimeResult(Result):
 
     __slots__ = ('_done_time', '_time_zone', '_time_window')
 
-    def __init__(self, done_time, time_zone, time_window):
+    def __init__(self, done_time, time_zone, time_window, request_id):
+        super().__init__(request_id)
         self._done_time = done_time
         self._time_zone = time_zone
         self._time_window = time_window
@@ -1187,12 +1225,12 @@ class GetConnectorDoneTimeResult(Result):
         self._time_window = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         done_time = content.get('DoneTime', 0)
         time_zone = content.get('TimeZone', '')
         time_window = content.get('TimeWindow', 0)
-        return cls(done_time, time_zone, time_window)
+        return cls(done_time, time_zone, time_window, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -1212,7 +1250,8 @@ class CreateSubscriptionResult(Result):
 
     __slots__ = '_sub_id'
 
-    def __init__(self, sub_id):
+    def __init__(self, sub_id, request_id):
+        super().__init__(request_id)
         self._sub_id = sub_id
 
     @property
@@ -1224,9 +1263,9 @@ class CreateSubscriptionResult(Result):
         self._sub_id = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
-        return cls(content['SubId'])
+        return cls(content['SubId'], headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -1259,15 +1298,23 @@ class GetSubscriptionResult(Subscription, Result):
     __slots__ = ('_comment', '_create_time', '_is_owner', '_last_modify_time',
                  '_state', '_sub_id', '_topic_name', '_type')
 
-    def __init__(self, comment, create_time, is_owner, last_modify_time,
-                 state, sub_id, topic_name, sub_type):
+    def __init__(self, topic_name, sub_id, comment, create_time, is_owner, last_modify_time,
+                 state, sub_type, request_id):
+        super(Result, self).__init__(request_id)
         super(GetSubscriptionResult, self).__init__(comment, create_time, is_owner, last_modify_time,
                                                     state, sub_id, topic_name, sub_type)
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
-        return GetSubscriptionResult.from_dict(content)
+        topic_name = content.get('TopicName', '')
+        sub_id = content.get('SubId', '')
+        comment = content.get('Comment', '')
+        create_time = content.get('CreateTime', 0)
+        is_owner = content.get('Owner', '')
+        last_modify_time = content.get('LastModifyTime', '')
+        sub_type = content.get('Type', 0)
+        return cls(topic_name, sub_id, comment, create_time, is_owner, last_modify_time, sub_type, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return super(GetSubscriptionResult, self).to_json()
@@ -1280,7 +1327,8 @@ class ListSubscriptionResult(Result):
 
     __slots__ = ('_total_count', '_subscriptions')
 
-    def __init__(self, total_count, subscriptions):
+    def __init__(self, total_count, subscriptions, request_id):
+        super().__init__(request_id)
         self._total_count = total_count
         self._subscriptions = subscriptions
 
@@ -1301,10 +1349,10 @@ class ListSubscriptionResult(Result):
         self._total_count = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         subscriptions = [Subscription.from_dict(item) for item in content['Subscriptions']]
-        return cls(content['TotalCount'], subscriptions)
+        return cls(content['TotalCount'], subscriptions, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -1320,7 +1368,8 @@ class JoinGroupResult(Result):
 
     __slots__ = '_consumer_id', '_version_id', '_session_timeout'
 
-    def __init__(self, consumer_id, version_id, session_timeout):
+    def __init__(self, consumer_id, version_id, session_timeout, request_id):
+        super().__init__(request_id)
         self._consumer_id = consumer_id
         self._version_id = version_id
         self._session_timeout = session_timeout
@@ -1350,12 +1399,12 @@ class JoinGroupResult(Result):
         self._session_timeout = session_timeout
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         consumer_id = content.get("ConsumerId", 0)
         version_id = content.get("VersionId", 0)
         session_timeout = content.get("SessionTimeout", 0)
-        return cls(consumer_id, version_id, session_timeout)
+        return cls(consumer_id, version_id, session_timeout, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -1372,7 +1421,8 @@ class HeartBeatResult(Result):
 
     __slots__ = '_plan_version', '_shard_list', '_total_plan'
 
-    def __init__(self, plan_version, shard_list, total_plan):
+    def __init__(self, plan_version, shard_list, total_plan, request_id):
+        super().__init__(request_id)
         self._plan_version = plan_version
         self._shard_list = shard_list
         self._total_plan = total_plan
@@ -1402,12 +1452,12 @@ class HeartBeatResult(Result):
         self._total_plan = total_plan
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         plan_version = content.get("PlanVersion", 0)
         shard_list = content.get("ShardList", [])
         total_plan = content.get("TotalPlan", "")
-        return cls(plan_version, shard_list, total_plan)
+        return cls(plan_version, shard_list, total_plan, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -1421,12 +1471,12 @@ class SyncGroupResult(Result):
     """
     Result of sync group api
     """
-    def __int__(self):
-        super(SyncGroupResult, self).__init__()
+    def __int__(self, request_id):
+        super().__init__(request_id)
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
-        return cls()
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {}
@@ -1436,12 +1486,12 @@ class LeaveGroupResult(Result):
     """
     Result of leave group api
     """
-    def __int__(self):
-        super(LeaveGroupResult, self).__init__()
+    def __int__(self, request_id):
+        super().__init__(request_id)
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
-        return cls()
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {}
@@ -1454,7 +1504,8 @@ class ListTopicSchemaResult(Result):
 
     __slots__ = '_page_number', '_page_size', '_page_count', '_total_count', '_record_schema_list'
 
-    def __init__(self, page_number, page_size, page_count, total_count, record_schema_list):
+    def __init__(self, page_number, page_size, page_count, total_count, record_schema_list, request_id):
+        super().__init__(request_id)
         self._page_number = page_number
         self._page_size = page_size
         self._page_count = page_count
@@ -1502,14 +1553,14 @@ class ListTopicSchemaResult(Result):
         self._record_schema_list = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         page_number = content.get("PageNumber", 0)
         page_size = content.get("PageSize", 0)
         page_count = content.get("PageCount", 0)
         total_count = content.get("TotalCount", 0)
         record_schema_list = content.get("RecordSchemaList", [])
-        return cls(page_number, page_size, page_count, total_count, record_schema_list)
+        return cls(page_number, page_size, page_count, total_count, record_schema_list, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -1528,7 +1579,8 @@ class GetTopicSchemaResult(Result):
 
     __slots__ = '_version_id', '_create_time', '_creator', '_record_schema'
 
-    def __init__(self, version_id, create_time, creator, record_schema):
+    def __init__(self, version_id, create_time, creator, record_schema, request_id):
+        super().__init__(request_id)
         self._version_id = version_id
         self._create_time = create_time
         self._creator = creator
@@ -1567,13 +1619,13 @@ class GetTopicSchemaResult(Result):
         self._record_schema = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         version_id = content.get("VersionId", 0)
         create_time = content.get("CreateTime", 0)
         creator = content.get("Creator", 0)
         record_schema = content.get("RecordSchema", 0)
-        return cls(version_id, create_time, creator, record_schema)
+        return cls(version_id, create_time, creator, record_schema, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -1591,7 +1643,8 @@ class RegisterTopicSchemaResult(Result):
 
     __slots__ = '_version_id'
 
-    def __init__(self, version_id):
+    def __init__(self, version_id, request_id):
+        super().__init__(request_id)
         self._version_id = version_id
 
     @property
@@ -1603,10 +1656,10 @@ class RegisterTopicSchemaResult(Result):
         self._version_id = value
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
+    def parse_content(cls, content, headers, **kwargs):
         content = json.loads(to_text(content))
         version_id = content.get("VersionId", 0)
-        return cls(version_id)
+        return cls(version_id, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {
@@ -1619,12 +1672,12 @@ class DeleteTopicSchemaResult(Result):
     Result of delete topic schema
     """
 
-    def __init__(self):
-        super(DeleteTopicSchemaResult, self).__init__()
+    def __init__(self, request_id):
+        super().__init__(request_id)
 
     @classmethod
-    def parse_content(cls, content, **kwargs):
-        return cls()
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return {}

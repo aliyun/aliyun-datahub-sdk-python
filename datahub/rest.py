@@ -321,7 +321,7 @@ class RestClient(object):
                          % (status_code, request_id, error_code, error_msg))
             self._exception_handler.raise_exception(error_msg, status_code, request_id, error_code)
 
-        return content
+        return content, resp.headers
 
     def get(self, url, **kwargs):
         return self.request(HTTPMethod.GET, url, **kwargs)

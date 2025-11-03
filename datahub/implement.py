@@ -51,9 +51,9 @@ class DataHubJson(object):
     def list_project(self):
         url = Path.PROJECTS
 
-        content = self._rest_client.get(url)
+        content, headers = self._rest_client.get(url)
 
-        result = ListProjectResult.parse_content(content)
+        result = ListProjectResult.parse_content(content, headers=headers)
         return result
 
     def create_project(self, project_name, comment):
@@ -71,8 +71,9 @@ class DataHubJson(object):
 
         url = Path.PROJECT % project_name
 
-        content = self._rest_client.get(url)
-        result = GetProjectResult.parse_content(to_text(content), project_name=project_name)
+        content, headers = self._rest_client.get(url)
+
+        result = GetProjectResult.parse_content(to_text(content), headers=headers, project_name=project_name)
         return result
 
     def update_project(self, project_name, comment):
@@ -98,9 +99,9 @@ class DataHubJson(object):
 
         url = Path.TOPICS % project_name
 
-        content = self._rest_client.get(url)
+        content, headers = self._rest_client.get(url)
 
-        result = ListTopicResult.parse_content(content)
+        result = ListTopicResult.parse_content(content, headers=headers)
         return result
 
     def create_blob_topic(self, project_name, topic_name, shard_count, life_cycle, extend_mode, comment):
@@ -119,9 +120,9 @@ class DataHubJson(object):
 
         url = Path.TOPIC % (project_name, topic_name)
 
-        content = self._rest_client.get(url)
+        content, headers = self._rest_client.get(url)
 
-        result = GetTopicResult.parse_content(to_text(content), project_name=project_name,
+        result = GetTopicResult.parse_content(to_text(content), headers=headers, project_name=project_name,
                                               topic_name=topic_name)
         return result
 
@@ -191,9 +192,9 @@ class DataHubJson(object):
 
         url = Path.SHARDS % (project_name, topic_name)
 
-        content = self._rest_client.get(url)
+        content, headers = self._rest_client.get(url)
 
-        result = ListShardResult.parse_content(content)
+        result = ListShardResult.parse_content(content, headers=headers)
         return result
 
     def merge_shard(self, project_name, topic_name, shard_id, adj_shard_id):
@@ -209,9 +210,9 @@ class DataHubJson(object):
         url = Path.SHARDS % (project_name, topic_name)
         request_param = MergeShardRequestParams(shard_id, adj_shard_id)
 
-        content = self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
 
-        result = MergeShardResult.parse_content(content)
+        result = MergeShardResult.parse_content(content, headers=headers)
         return result
 
     def split_shard(self, project_name, topic_name, shard_id, split_key=''):
@@ -231,9 +232,9 @@ class DataHubJson(object):
         url = Path.SHARDS % (project_name, topic_name)
         request_param = SplitShardRequestParams(shard_id, split_key)
 
-        content = self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
 
-        result = SplitShardResult.parse_content(content)
+        result = SplitShardResult.parse_content(content, headers=headers)
         return result
 
     def extend_shard(self, project_name, topic_name, shard_count):
@@ -266,9 +267,9 @@ class DataHubJson(object):
         url = Path.SHARD % (project_name, topic_name, shard_id)
         request_param = GetCursorRequestParams(cursor_type, param)
 
-        content = self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
 
-        result = GetCursorResult.parse_content(content)
+        result = GetCursorResult.parse_content(content, headers=headers)
         return result
 
     def put_records(self, project_name, topic_name, record_list):
@@ -281,10 +282,10 @@ class DataHubJson(object):
 
         request_param = PutRecordsRequestParams(record_list)
 
-        content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
+        content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
                                          compress_format=self._compress_format)
 
-        result = PutRecordsResult.parse_content(content)
+        result = PutRecordsResult.parse_content(content, headers=headers)
 
         return result
 
@@ -308,9 +309,9 @@ class DataHubJson(object):
         url = Path.SHARD % (project_name, topic_name, shard_id)
         request_param = GetMeteringInfoRequestParams()
 
-        content = self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
 
-        result = GetMeteringInfoResult.parse_content(content)
+        result = GetMeteringInfoResult.parse_content(content, headers=headers)
         return result
 
     def list_connector(self, project_name, topic_name):
@@ -321,9 +322,9 @@ class DataHubJson(object):
 
         url = Path.CONNECTORS % (project_name, topic_name) + "?mode=id"
 
-        content = self._rest_client.get(url)
+        content, headers = self._rest_client.get(url)
 
-        result = ListConnectorResult.parse_content(content)
+        result = ListConnectorResult.parse_content(content, headers=headers)
         return result
 
     def create_connector(self, project_name, topic_name, connector_type, column_fields, config, start_time):
@@ -335,9 +336,9 @@ class DataHubJson(object):
         url = Path.CONNECTOR % (project_name, topic_name, connector_type.value)
         request_param = CreateConnectorParams(column_fields, config, start_time)
 
-        content = self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
 
-        result = CreateConnectorResult.parse_content(content)
+        result = CreateConnectorResult.parse_content(content, headers=headers)
         return result
 
     def update_connector(self, project_name, topic_name, connector_id, config):
@@ -359,9 +360,9 @@ class DataHubJson(object):
 
         url = Path.CONNECTOR % (project_name, topic_name, connector_id)
 
-        content = self._rest_client.get(url)
+        content, headers = self._rest_client.get(url)
 
-        result = GetConnectorResult.parse_content(content)
+        result = GetConnectorResult.parse_content(content, headers=headers)
         return result
 
     def delete_connector(self, project_name, topic_name, connector_id):
@@ -383,9 +384,9 @@ class DataHubJson(object):
         url = Path.CONNECTOR % (project_name, topic_name, connector_id)
         request_param = GetConnectorShardStatusParams(shard_id)
 
-        content = self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
 
-        result = GetConnectorShardStatusResult.parse_content(content)
+        result = GetConnectorShardStatusResult.parse_content(content, headers=headers)
         return result
 
     def reload_connector(self, project_name, topic_name, connector_id, shard_id=''):
@@ -420,9 +421,9 @@ class DataHubJson(object):
 
         url = Path.DONE_TIME % (project_name, topic_name, connector_id)
 
-        content = self._rest_client.get(url)
+        content, headers = self._rest_client.get(url)
 
-        result = GetConnectorDoneTimeResult.parse_content(content)
+        result = GetConnectorDoneTimeResult.parse_content(content, headers=headers)
         return result
 
     def update_connector_state(self, project_name, topic_name, connector_id, connector_state):
@@ -465,9 +466,9 @@ class DataHubJson(object):
         url = Path.OFFSETS % (project_name, topic_name, sub_id)
         request_param = InitAndGetSubscriptionOffsetParams(shard_ids)
 
-        content = self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
 
-        result = InitAndGetSubscriptionOffsetResult.parse_content(content)
+        result = InitAndGetSubscriptionOffsetResult.parse_content(content, headers=headers)
         return result
 
     def get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids=None):
@@ -484,9 +485,9 @@ class DataHubJson(object):
         url = Path.OFFSETS % (project_name, topic_name, sub_id)
         request_param = GetSubscriptionOffsetParams(shard_ids)
 
-        content = self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
 
-        result = GetSubscriptionOffsetResult.parse_content(content)
+        result = GetSubscriptionOffsetResult.parse_content(content, headers=headers)
         return result
 
     def update_subscription_offset(self, project_name, topic_name, sub_id, offsets):
@@ -519,8 +520,8 @@ class DataHubJson(object):
         url = Path.SUBSCRIPTION % (project_name, topic_name, consumer_group)
         request_param = JoinGroupParams(session_timeout)
 
-        content = self._rest_client.post(url, data=request_param.content())
-        result = JoinGroupResult.parse_content(content)
+        content, headers = self._rest_client.post(url, data=request_param.content())
+        result = JoinGroupResult.parse_content(content, headers=headers)
         return result
 
     def heart_beat(self, project_name, topic_name, consumer_group, consumer_id, version_id, hold_shard_list, read_end_shard_list):
@@ -536,8 +537,8 @@ class DataHubJson(object):
 
         url = Path.SUBSCRIPTION % (project_name, topic_name, consumer_group)
         request_param = HeartBeatParams(consumer_id, version_id, hold_shard_list, read_end_shard_list)
-        content = self._rest_client.post(url, data=request_param.content())
-        result = HeartBeatResult.parse_content(content)
+        content, headers = self._rest_client.post(url, data=request_param.content())
+        result = HeartBeatResult.parse_content(content, headers=headers)
         return result
 
     def sync_group(self, project_name, topic_name, consumer_group, consumer_id, version_id, release_shard_list, read_end_shard_list):
@@ -550,8 +551,8 @@ class DataHubJson(object):
 
         url = Path.SUBSCRIPTION % (project_name, topic_name, consumer_group)
         request_param = SyncGroupParams(consumer_id, version_id, release_shard_list, read_end_shard_list)
-        content = self._rest_client.post(url, data=request_param.content())
-        result = SyncGroupResult.parse_content(content)
+        content, headers = self._rest_client.post(url, data=request_param.content())
+        result = SyncGroupResult.parse_content(content, headers=headers)
         return result
 
     def leave_group(self, project_name, topic_name, consumer_group, consumer_id, version_id):
@@ -564,8 +565,8 @@ class DataHubJson(object):
 
         url = Path.SUBSCRIPTION % (project_name, topic_name, consumer_group)
         request_param = LeaveGroupParams(consumer_id, version_id)
-        content = self._rest_client.post(url, data=request_param.content())
-        result = LeaveGroupResult.parse_content(content)
+        content, headers = self._rest_client.post(url, data=request_param.content())
+        result = LeaveGroupResult.parse_content(content, headers=headers)
         return result
 
     def list_topic_schema(self, project_name, topic_name, page_number=-1, page_size=-1):
@@ -576,8 +577,8 @@ class DataHubJson(object):
 
         url = Path.TOPIC % (project_name, topic_name)
         request_param = ListTopicSchemaParams(page_number, page_size)
-        content = self._rest_client.post(url, data=request_param.content())
-        result = ListTopicSchemaResult.parse_content(content)
+        content, headers = self._rest_client.post(url, data=request_param.content())
+        result = ListTopicSchemaResult.parse_content(content, headers=headers)
         return result
 
     def get_topic_schema(self, project_name, topic_name, schema=None, version_id=-1):
@@ -591,8 +592,8 @@ class DataHubJson(object):
 
         url = Path.TOPIC % (project_name, topic_name)
         request_param = GetTopicSchemaParams(version_id, schema)
-        content = self._rest_client.post(url, data=request_param.content())
-        result = GetTopicSchemaResult.parse_content(content)
+        content, headers = self._rest_client.post(url, data=request_param.content())
+        result = GetTopicSchemaResult.parse_content(content, headers=headers)
         return result
 
     def register_topic_schema(self, project_name, topic_name, schema):
@@ -603,8 +604,8 @@ class DataHubJson(object):
 
         url = Path.TOPIC % (project_name, topic_name)
         request_param = RegisterTopicSchemaParams(schema)
-        content = self._rest_client.post(url, data=request_param.content())
-        result = RegisterTopicSchemaResult.parse_content(content)
+        content, headers = self._rest_client.post(url, data=request_param.content())
+        result = RegisterTopicSchemaResult.parse_content(content, headers=headers)
         return result
 
     def delete_topic_schema(self, project_name, topic_name, version_id):
@@ -615,8 +616,8 @@ class DataHubJson(object):
 
         url = Path.TOPIC % (project_name, topic_name)
         request_param = DeleteTopicSchemaParams(version_id)
-        content = self._rest_client.post(url, data=request_param.content())
-        result = DeleteTopicSchemaResult.parse_content(content)
+        content, headers = self._rest_client.post(url, data=request_param.content())
+        result = DeleteTopicSchemaResult.parse_content(content, headers=headers)
         return result
 
     # =======================================================
@@ -632,9 +633,9 @@ class DataHubJson(object):
         url = Path.SUBSCRIPTIONS % (project_name, topic_name)
         request_param = CreateSubscriptionParams(comment)
 
-        content = self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
 
-        result = CreateSubscriptionResult.parse_content(content)
+        result = CreateSubscriptionResult.parse_content(content, headers=headers)
         return result
 
     def delete_subscription(self, project_name, topic_name, sub_id):
@@ -659,9 +660,9 @@ class DataHubJson(object):
 
         url = Path.SUBSCRIPTION % (project_name, topic_name, sub_id)
 
-        content = self._rest_client.get(url)
+        content, headers = self._rest_client.get(url)
 
-        result = GetSubscriptionResult.parse_content(content)
+        result = GetSubscriptionResult.parse_content(content, headers=headers)
         return result
 
     def update_subscription(self, project_name, topic_name, sub_id, comment):
@@ -706,8 +707,8 @@ class DataHubJson(object):
         url = Path.SUBSCRIPTIONS % (project_name, topic_name)
         request_param = ListSubscriptionParams(query_key, page_index, page_size)
 
-        content = self._rest_client.post(url, data=request_param.content())
-        result = ListSubscriptionResult.parse_content(content)
+        content, headers = self._rest_client.post(url, data=request_param.content())
+        result = ListSubscriptionResult.parse_content(content, headers=headers)
         return result
 
     def reset_subscription_offset(self, project_name, topic_name, sub_id, offsets):
@@ -787,7 +788,7 @@ class DataHubJson(object):
 
         request_param = GetRecordsRequestParams(cursor, limit_num)
 
-        content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
+        content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
                                          compress_format=self._compress_format)
 
         result = GetRecordsResult.parse_content(content, record_schema=record_schema)
@@ -816,10 +817,10 @@ class DataHubPB(DataHubJson):
 
         request_param = PutPBRecordsRequestParams(record_list)
 
-        content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
+        content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
                                          compress_format=self._compress_format)
 
-        result = PutPBRecordsResult.parse_content(content)
+        result = PutPBRecordsResult.parse_content(content, headers=headers)
 
         return result
 
@@ -860,10 +861,10 @@ class DataHubPB(DataHubJson):
         url = Path.SHARD % (project_name, topic_name, shard_id)
         request_param = GetPBRecordsRequestParams(cursor, limit_num)
 
-        content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(sub_id),
+        content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(sub_id),
                                          compress_format=self._compress_format)
 
-        result = GetPBRecordsResult.parse_content(content, record_schema=record_schema)
+        result = GetPBRecordsResult.parse_content(content, headers=headers, record_schema=record_schema)
 
         return result
 
@@ -915,9 +916,9 @@ class DataHubBatch(DataHubJson):
         url = Path.SHARD % (project_name, topic_name, shard_id)
         request_param = GetBatchRecordsRequestParams(cursor, limit_num)
 
-        content = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(sub_id),
+        content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(sub_id),
                                          compress_format=self._compress_format)
-        result = GetBatchRecordsResult.parse_content(content, record_schema=record_schema, project_name=project_name,
-                                                     topic_name=topic_name, init_schema=record_schema,
+        result = GetBatchRecordsResult.parse_content(content, headers=headers, record_schema=record_schema,
+                                                     project_name=project_name, topic_name=topic_name, init_schema=record_schema,
                                                      schema_register=self._schema_register if record_schema else None)
         return result
