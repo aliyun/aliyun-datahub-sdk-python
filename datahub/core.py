@@ -108,7 +108,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is not valid
         :raise: :class:`datahub.exceptions.ResourceExistException` if project is already existed
         """
-        self._datahub_impl.create_project(project_name, comment)
+        return self._datahub_impl.create_project(project_name, comment)
 
     @type_assert(object, str)
     def get_project(self, project_name):
@@ -147,7 +147,7 @@ class DataHub(object):
         :return: none
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name is empty
         """
-        self._datahub_impl.delete_project(project_name)
+        return self._datahub_impl.delete_project(project_name)
 
     @type_assert(object, str)
     def list_topic(self, project_name):
@@ -178,7 +178,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if project not existed
         :raise: :class:`datahub.exceptions.ResourceExistException` if topic is already existed
         """
-        self._datahub_impl.create_blob_topic(project_name, topic_name, shard_count, life_cycle, extend_mode, comment)
+        return self._datahub_impl.create_blob_topic(project_name, topic_name, shard_count, life_cycle, extend_mode, comment)
 
     @type_assert(object, str, str, int, int, RecordSchema, str, bool)
     def create_tuple_topic(self, project_name, topic_name, shard_count, life_cycle, record_schema, comment, extend_mode=None):
@@ -198,7 +198,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if project not existed
         :raise: :class:`datahub.exceptions.ResourceExistException` if topic is already existed
         """
-        self._datahub_impl.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, record_schema, extend_mode, comment)
+        return self._datahub_impl.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, record_schema, extend_mode, comment)
 
     @type_assert(object, str, str)
     def get_topic(self, project_name, topic_name):
@@ -227,7 +227,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if the project name or topic name is empty; life_cycle is not positive
         """
-        self._datahub_impl.update_topic(project_name, topic_name, life_cycle, comment)
+        return self._datahub_impl.update_topic(project_name, topic_name, life_cycle, comment)
 
     @type_assert(object, str, str)
     def delete_topic(self, project_name, topic_name):
@@ -240,7 +240,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if the project name or topic name is empty
         """
-        self._datahub_impl.delete_topic(project_name, topic_name)
+        return self._datahub_impl.delete_topic(project_name, topic_name)
 
     @type_assert(object, str, str, str, FieldType)
     def append_field(self, project_name, topic_name, field_name, field_type):
@@ -255,7 +255,7 @@ class DataHub(object):
         :return: none
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or field_name is empty; field_type is wrong type
         """
-        self._datahub_impl.append_field(project_name, topic_name, field_name, field_type)
+        return self._datahub_impl.append_field(project_name, topic_name, field_name, field_type)
 
     @type_assert(object, str, str, int)
     def wait_shards_ready(self, project_name, topic_name, timeout=30):
@@ -272,7 +272,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.InvalidParameterException` if the project name or topic name is empty; timeout < 0
         :raise: :class:`datahub.exceptions.DatahubException` if timeout
         """
-        self._datahub_impl.wait_shards_ready(project_name, topic_name, timeout)
+        return self._datahub_impl.wait_shards_ready(project_name, topic_name, timeout)
 
     @type_assert(object, str, str)
     def list_shard(self, project_name, topic_name):
@@ -334,7 +334,7 @@ class DataHub(object):
         :param shard_count: shard count extend to
         :return: none
         """
-        self._datahub_impl.extend_shard(project_name, topic_name, shard_count)
+        return self._datahub_impl.extend_shard(project_name, topic_name, shard_count)
 
     @type_assert(object, str, str, str, CursorType, int)
     def get_cursor(self, project_name, topic_name, shard_id, cursor_type, param=-1):
@@ -500,7 +500,7 @@ class DataHub(object):
         :type config: :class:`datahub.models.ConnectorConfig`
         :return: none
         """
-        self._datahub_impl.update_connector(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, config)
+        return self._datahub_impl.update_connector(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, config)
 
     @type_assert(object, str, str, (ConnectorType, str))
     def get_connector(self, project_name, topic_name, connector_id):
@@ -531,7 +531,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type is wrong type
         """
-        self._datahub_impl.delete_connector(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id)
+        return self._datahub_impl.delete_connector(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id)
 
     @type_assert(object, str, str, (ConnectorType, str), str)
     def get_connector_shard_status(self, project_name, topic_name, connector_id, shard_id=''):
@@ -564,7 +564,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or filed_name is empty; connector_type is wrong type
         """
-        self._datahub_impl.reload_connector(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, shard_id)
+        return self._datahub_impl.reload_connector(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, shard_id)
 
     @type_assert(object, str, str, (ConnectorType, str), str)
     def append_connector_field(self, project_name, topic_name, connector_id, field_name):
@@ -580,7 +580,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or filed_name is empty; connector_type is wrong type
         """
-        self._datahub_impl.append_connector_field(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, field_name)
+        return self._datahub_impl.append_connector_field(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, field_name)
 
     @type_assert(object, str, str, (ConnectorType, str))
     def get_connector_done_time(self, project_name, topic_name, connector_id):
@@ -609,7 +609,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type or connector_state is wrong type
         """
-        self._datahub_impl.update_connector_state(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, connector_state)
+        return self._datahub_impl.update_connector_state(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, connector_state)
 
     @type_assert(object, str, str, (ConnectorType, str), str, ConnectorOffset)
     def update_connector_offset(self, project_name, topic_name, connector_id, shard_id, connector_offset):
@@ -627,7 +627,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or connector not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty; connector_type or connector_state is wrong type
         """
-        self._datahub_impl.update_connector_offset(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, shard_id, connector_offset)
+        return self._datahub_impl.update_connector_offset(project_name, topic_name, connector_id.value if isinstance(connector_id, ConnectorType) else connector_id, shard_id, connector_offset)
 
     @type_assert(object, str, str, (str, list), (str, list))
     def init_and_get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids):
@@ -676,7 +676,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.InvalidOperationException` if the offset session closed or offset version changed
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty; offsets is wrong type
         """
-        self._datahub_impl.update_subscription_offset(project_name, topic_name, sub_id, offsets)
+        return self._datahub_impl.update_subscription_offset(project_name, topic_name, sub_id, offsets)
 
     @type_assert(object, str, str, str)
     def create_subscription(self, project_name, topic_name, comment):
@@ -706,7 +706,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty
         """
-        self._datahub_impl.delete_subscription(project_name, topic_name, sub_id)
+        return self._datahub_impl.delete_subscription(project_name, topic_name, sub_id)
 
     @type_assert(object, str, str, str)
     def get_subscription(self, project_name, topic_name, sub_id):
@@ -736,7 +736,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty
         """
-        self._datahub_impl.update_subscription(project_name, topic_name, sub_id, comment)
+        return self._datahub_impl.update_subscription(project_name, topic_name, sub_id, comment)
 
     @type_assert(object, str, str, str, SubscriptionState)
     def update_subscription_state(self, project_name, topic_name, sub_id, state):
@@ -752,7 +752,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty; state is wrong type
         """
-        self._datahub_impl.update_subscription_state(project_name, topic_name, sub_id, state)
+        return self._datahub_impl.update_subscription_state(project_name, topic_name, sub_id, state)
 
     @type_assert(object, str, str, str, int, int)
     def list_subscription(self, project_name, topic_name, query_key, page_index, page_size):
@@ -788,7 +788,7 @@ class DataHub(object):
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project, topic or subscription not exists
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name, topic_name or sub_id is empty; offsets is wrong type
         """
-        self._datahub_impl.reset_subscription_offset(project_name, topic_name, sub_id, offsets)
+        return self._datahub_impl.reset_subscription_offset(project_name, topic_name, sub_id, offsets)
 
     @type_assert(object, str, str, str, int)
     def join_group(self, project_name, topic_name, consumer_group, session_timeout):

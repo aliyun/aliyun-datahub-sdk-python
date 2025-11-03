@@ -68,6 +68,19 @@ class Result(object):
         return to_text(self.to_json())
 
 
+class CreateProjectResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
 class ListProjectResult(Result):
     """
     Request params of list projects api
@@ -168,6 +181,45 @@ class GetProjectResult(Result):
             'CreateTime': self._create_time,
             'LastModifyTime': self.last_modify_time
         }
+
+
+class UpdateProjectResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class DeleteProjectResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class CreateTopicResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
 
 
 class ListTopicResult(Result):
@@ -350,6 +402,45 @@ class GetTopicResult(Result):
         return data
 
 
+class UpdateTopicResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class DeleteTopicResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class AppendFieldResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
 class ListShardResult(Result):
     """
     Result of list shards api
@@ -467,6 +558,19 @@ class SplitShardResult(Result):
         }
 
 
+class ExtendShardResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
 class GetCursorResult(Result):
     """
     Request params of get cursor api
@@ -571,6 +675,19 @@ class PutRecordsResult(Result):
             'FailedRecordCount': self._failed_record_count,
             'FailedRecords': [failed_record.to_json() for failed_record in self._failed_records]
         }
+
+
+class PutRecordsByShardResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
 
 
 class PutPBRecordsResult(PutRecordsResult):
@@ -1094,6 +1211,84 @@ class GetConnectorShardStatusResult(Result):
         }
 
 
+class UpdateConnectorResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class DeleteConnectorResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class ReloadConnectorResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class AppendConnectorFieldResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class UpdateConnectorStateResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class UpdateConnectorOffsetResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
 class InitAndGetSubscriptionOffsetResult(Result):
     """
     Result of init and get subscription offset api
@@ -1178,6 +1373,32 @@ class GetSubscriptionOffsetResult(Result):
         return {
             'Offsets': offsets
         }
+
+
+class UpdateSubscriptionOffsetResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class ResetSubscriptionOffsetResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
 
 
 class GetConnectorDoneTimeResult(Result):
@@ -1359,6 +1580,45 @@ class ListSubscriptionResult(Result):
             'TotalCount': self._total_count,
             'Subscriptions': [subscription.to_json() for subscription in self._subscriptions]
         }
+
+
+class UpdateSubscriptionResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class DeleteSubscriptionResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
+
+
+class UpdateSubscriptionStateResult(Result):
+
+    def __init__(self, request_id):
+        super().__init__(request_id)
+
+    @classmethod
+    def parse_content(cls, content, headers, **kwargs):
+        return cls(headers.get(Headers.REQUEST_ID, ''))
+
+    def to_json(self):
+        pass
 
 
 class JoinGroupResult(Result):

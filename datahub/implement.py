@@ -63,7 +63,10 @@ class DataHubJson(object):
         url = Path.PROJECT % project_name
         request_param = CreateProjectRequestParams(comment)
 
-        self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
+
+        result = CreateProjectResult.parse_content(content, headers=headers)
+        return result
 
     def get_project(self, project_name):
         if check_empty(project_name):
@@ -83,7 +86,10 @@ class DataHubJson(object):
         url = Path.PROJECT % project_name
         request_param = UpdateProjectRequestParams(comment)
 
-        self._rest_client.put(url, data=request_param.content())
+        content, headers = self._rest_client.put(url, data=request_param.content())
+
+        result = UpdateProjectResult.parse_content(content, headers=headers)
+        return result
 
     def delete_project(self, project_name):
         if check_empty(project_name):
@@ -91,7 +97,10 @@ class DataHubJson(object):
 
         url = Path.PROJECT % project_name
 
-        self._rest_client.delete(url)
+        content, headers = self._rest_client.delete(url)
+
+        result = DeleteProjectResult.parse_content(content, headers=headers)
+        return result
 
     def list_topic(self, project_name):
         if check_empty(project_name):
@@ -105,11 +114,11 @@ class DataHubJson(object):
         return result
 
     def create_blob_topic(self, project_name, topic_name, shard_count, life_cycle, extend_mode, comment):
-        self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.BLOB, comment, extend_mode)
+        return self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.BLOB, comment, extend_mode)
 
     def create_tuple_topic(self, project_name, topic_name, shard_count, life_cycle, record_schema, extend_mode,
                            comment):
-        self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.TUPLE, comment, extend_mode,
+        return self.__create_topic(project_name, topic_name, shard_count, life_cycle, RecordType.TUPLE, comment, extend_mode,
                             record_schema)
 
     def get_topic(self, project_name, topic_name):
@@ -137,7 +146,10 @@ class DataHubJson(object):
         url = Path.TOPIC % (project_name, topic_name)
         request_param = UpdateTopicRequestParams(life_cycle, comment)
 
-        self._rest_client.put(url, data=request_param.content())
+        content, headers = self._rest_client.put(url, data=request_param.content())
+
+        result = UpdateTopicResult.parse_content(content, headers=headers)
+        return result
 
     def delete_topic(self, project_name, topic_name):
         if check_empty(project_name):
@@ -147,7 +159,10 @@ class DataHubJson(object):
 
         url = Path.TOPIC % (project_name, topic_name)
 
-        self._rest_client.delete(url)
+        content, headers = self._rest_client.delete(url)
+
+        result = DeleteTopicResult.parse_content(content, headers=headers)
+        return result
 
     def append_field(self, project_name, topic_name, field_name, field_type):
         if check_empty(project_name):
@@ -163,7 +178,10 @@ class DataHubJson(object):
         url = Path.TOPIC % (project_name, topic_name)
         request_param = AppendFieldParams(field_name, field_type)
 
-        self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
+
+        result = AppendFieldResult.parse_content(content, headers=headers)
+        return result
 
     def wait_shards_ready(self, project_name, topic_name, timeout=30):
         if check_empty(project_name):
@@ -248,7 +266,10 @@ class DataHubJson(object):
         url = Path.SHARDS % (project_name, topic_name)
         request_param = ExtendShardRequestParams(shard_count)
 
-        self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
+
+        result = ExtendShardResult.parse_content(content, headers=headers)
+        return result
 
     def get_cursor(self, project_name, topic_name, shard_id, cursor_type, param=-1):
         if check_empty(project_name):
@@ -283,7 +304,7 @@ class DataHubJson(object):
         request_param = PutRecordsRequestParams(record_list)
 
         content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
-                                         compress_format=self._compress_format)
+                                                  compress_format=self._compress_format)
 
         result = PutRecordsResult.parse_content(content, headers=headers)
 
@@ -350,7 +371,10 @@ class DataHubJson(object):
         url = Path.CONNECTOR % (project_name, topic_name, connector_id)
         request_param = UpdateConnectorParams(config)
 
-        self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
+
+        result = UpdateConnectorResult.parse_content(content, headers=headers)
+        return result
 
     def get_connector(self, project_name, topic_name, connector_id):
         if check_empty(project_name):
@@ -373,7 +397,10 @@ class DataHubJson(object):
 
         url = Path.CONNECTOR % (project_name, topic_name, connector_id)
 
-        self._rest_client.delete(url)
+        content, headers = self._rest_client.delete(url)
+
+        result = DeleteConnectorResult.parse_content(content, headers=headers)
+        return result
 
     def get_connector_shard_status(self, project_name, topic_name, connector_id, shard_id=''):
         if check_empty(project_name):
@@ -398,7 +425,10 @@ class DataHubJson(object):
         url = Path.CONNECTOR % (project_name, topic_name, connector_id)
         request_param = ReloadConnectorParams(shard_id)
 
-        self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
+
+        result = ReloadConnectorResult.parse_content(content, headers=headers)
+        return result
 
     def append_connector_field(self, project_name, topic_name, connector_id, field_name):
         if check_empty(project_name):
@@ -411,7 +441,10 @@ class DataHubJson(object):
         url = Path.CONNECTOR % (project_name, topic_name, connector_id)
         request_param = AppendConnectorFieldParams(field_name)
 
-        self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
+
+        result = AppendConnectorFieldResult.parse_content(content, headers=headers)
+        return result
 
     def get_connector_done_time(self, project_name, topic_name, connector_id):
         if check_empty(project_name):
@@ -435,7 +468,10 @@ class DataHubJson(object):
         url = Path.CONNECTOR % (project_name, topic_name, connector_id)
         request_param = UpdateConnectorStateParams(connector_state)
 
-        self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
+
+        result = UpdateConnectorStateResult.parse_content(content, headers=headers)
+        return result
 
     def update_connector_offset(self, project_name, topic_name, connector_id, shard_id, connector_offset):
         if check_empty(project_name):
@@ -446,7 +482,10 @@ class DataHubJson(object):
         url = Path.CONNECTOR % (project_name, topic_name, connector_id)
         request_param = UpdateConnectorOffsetParams(shard_id, connector_offset)
 
-        self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
+
+        result = UpdateConnectorOffsetResult.parse_content(content, headers=headers)
+        return result
 
     def init_and_get_subscription_offset(self, project_name, topic_name, sub_id, shard_ids):
         if check_empty(project_name):
@@ -507,7 +546,10 @@ class DataHubJson(object):
         url = Path.OFFSETS % (project_name, topic_name, sub_id)
         request_param = UpdateSubscriptionOffsetParams(offsets)
 
-        self._rest_client.put(url, data=request_param.content())
+        content, headers = self._rest_client.put(url, data=request_param.content())
+
+        result = UpdateSubscriptionOffsetResult.parse_content(content, headers=headers)
+        return result
 
     def join_group(self, project_name, topic_name, consumer_group, session_timeout):
         if check_empty(project_name):
@@ -648,7 +690,10 @@ class DataHubJson(object):
 
         url = Path.SUBSCRIPTION % (project_name, topic_name, sub_id)
 
-        self._rest_client.delete(url)
+        content, headers = self._rest_client.delete(url)
+
+        result = DeleteSubscriptionResult.parse_content(content, headers=headers)
+        return result
 
     def get_subscription(self, project_name, topic_name, sub_id):
         if check_empty(project_name):
@@ -676,7 +721,10 @@ class DataHubJson(object):
         url = Path.SUBSCRIPTION % (project_name, topic_name, sub_id)
         request_param = UpdateSubscriptionParams(comment)
 
-        self._rest_client.put(url, data=request_param.content())
+        content, headers = self._rest_client.put(url, data=request_param.content())
+
+        result = UpdateSubscriptionResult.parse_content(content, headers=headers)
+        return result
 
     def update_subscription_state(self, project_name, topic_name, sub_id, state):
         if check_empty(project_name):
@@ -692,7 +740,10 @@ class DataHubJson(object):
         url = Path.SUBSCRIPTION % (project_name, topic_name, sub_id)
         request_param = UpdateSubscriptionStateParams(state)
 
-        self._rest_client.put(url, data=request_param.content())
+        content, headers = self._rest_client.put(url, data=request_param.content())
+
+        result = UpdateSubscriptionStateResult.parse_content(content, headers=headers)
+        return result
 
     def list_subscription(self, project_name, topic_name, query_key, page_index, page_size):
         if check_empty(project_name):
@@ -730,7 +781,10 @@ class DataHubJson(object):
         url = Path.OFFSETS % (project_name, topic_name, sub_id)
         request_param = ResetSubscriptionOffsetParams(offsets)
 
-        self._rest_client.put(url, data=request_param.content())
+        content, headers = self._rest_client.put(url, data=request_param.content())
+
+        result = ResetSubscriptionOffsetResult.parse_content(content, headers=headers)
+        return result
 
     # =======================================================
     # private function
@@ -768,7 +822,10 @@ class DataHubJson(object):
         url = Path.TOPIC % (project_name, topic_name)
         request_param = CreateTopicRequestParams(shard_count, life_cycle, record_type, record_schema, extend_mode, comment)
 
-        self._rest_client.post(url, data=request_param.content())
+        content, headers = self._rest_client.post(url, data=request_param.content())
+
+        result = CreateTopicResult.parse_content(content, headers=headers)
+        return result
 
     def __get_records(self, project_name, topic_name, sub_id, shard_id, cursor, limit_num, record_schema=None):
         if check_empty(project_name):
@@ -789,7 +846,7 @@ class DataHubJson(object):
         request_param = GetRecordsRequestParams(cursor, limit_num)
 
         content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
-                                         compress_format=self._compress_format)
+                                                  compress_format=self._compress_format)
 
         result = GetRecordsResult.parse_content(content, record_schema=record_schema)
 
@@ -818,7 +875,7 @@ class DataHubPB(DataHubJson):
         request_param = PutPBRecordsRequestParams(record_list)
 
         content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
-                                         compress_format=self._compress_format)
+                                                  compress_format=self._compress_format)
 
         result = PutPBRecordsResult.parse_content(content, headers=headers)
 
@@ -839,8 +896,11 @@ class DataHubPB(DataHubJson):
 
         request_param = PutPBRecordsRequestParams(record_list)
 
-        self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
-                               compress_format=self._compress_format)
+        content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
+                                                  compress_format=self._compress_format)
+
+        result = PutRecordsByShardResult.parse_content(content, headers=headers)
+        return result
 
     def get_blob_records(self, project_name, topic_name, sub_id, shard_id, cursor, limit_num):
         return self.__get_records(project_name, topic_name, sub_id, shard_id, cursor, limit_num)
@@ -862,7 +922,7 @@ class DataHubPB(DataHubJson):
         request_param = GetPBRecordsRequestParams(cursor, limit_num)
 
         content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(sub_id),
-                                         compress_format=self._compress_format)
+                                                  compress_format=self._compress_format)
 
         result = GetPBRecordsResult.parse_content(content, headers=headers, record_schema=record_schema)
 
@@ -895,7 +955,10 @@ class DataHubBatch(DataHubJson):
         url = Path.SHARD % (project_name, topic_name, shard_id)
         request_param = PutBatchRecordsRequestParams(record_list, project_name, topic_name, self._compress_format,
                                                      self._schema_register)
-        self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers())
+        content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers())
+
+        result = PutRecordsByShardResult.parse_content(content, headers=headers)
+        return result
 
     def get_blob_records(self, project_name, topic_name, sub_id, shard_id, cursor, limit_num):
         return self.__get_records(project_name, topic_name, sub_id, shard_id, cursor, limit_num)
@@ -917,7 +980,7 @@ class DataHubBatch(DataHubJson):
         request_param = GetBatchRecordsRequestParams(cursor, limit_num)
 
         content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(sub_id),
-                                         compress_format=self._compress_format)
+                                                  compress_format=self._compress_format)
         result = GetBatchRecordsResult.parse_content(content, headers=headers, record_schema=record_schema,
                                                      project_name=project_name, topic_name=topic_name, init_schema=record_schema,
                                                      schema_register=self._schema_register if record_schema else None)
