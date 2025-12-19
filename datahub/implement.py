@@ -848,7 +848,7 @@ class DataHubJson(object):
         content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
                                                   compress_format=self._compress_format)
 
-        result = GetRecordsResult.parse_content(content, record_schema=record_schema)
+        result = GetRecordsResult.parse_content(content, headers=headers, record_schema=record_schema)
 
         return result
 
