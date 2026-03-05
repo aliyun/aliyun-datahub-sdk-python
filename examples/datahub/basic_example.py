@@ -17,6 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import json
 import os
 import sys
 import time
@@ -27,21 +28,48 @@ from datahub.exceptions import ResourceExistException, DatahubException
 from datahub.models import FieldType, RecordSchema, TupleRecord, BlobRecord, CursorType, RecordType
 from alibabacloud_credentials.client import Client as CredClient
 from alibabacloud_credentials.models import Config as CredConfig
+from aliyunsdkcore.client import AcsClient
+from aliyunsdkcore.acs_exception.exceptions import ServerException
+from aliyunsdksts.request.v20150401.AssumeRoleRequest import AssumeRoleRequest
 
+endpoint = ''
+region = ''
 access_id = ''
 access_key = ''
-endpoint = ''
+role_arn = ''
+
+
+def get_sts_token():
+    """
+    使用 RAM 用户 AK 获取 STS Token
+    """
+    try:
+        client = AcsClient(access_id, access_key, region)
+
+        request = AssumeRoleRequest()
+        request.set_accept_format('json')
+        request.set_RoleArn(role_arn)
+        request.set_RoleSessionName("datahub-python-session")  # 会话名称，自定义
+        request.set_DurationSeconds(3600)  # Token 有效期，单位秒
+
+        response = client.do_action_with_exception(request)
+        result = json.loads(response)
+
+        credentials = result['Credentials']
+        temp_access_id = credentials['AccessKeyId']
+        temp_access_key = credentials['AccessKeySecret']
+        temp_sts_token = credentials['SecurityToken']
+
+        print(f"获取成功! 临时 Access ID: {temp_access_id}, Access Key: {temp_access_key}, Sts Token: {temp_sts_token}.")
+        return temp_access_id, temp_access_key, temp_sts_token
+    except ServerException as e:
+        print(f"获取 STS Token 失败: {e.get_error_code()} - {e.get_error_msg()}")
+        return None, None, None
 
 # ===================== 构建DataHub =====================
 
-# 方式一. 直接使用AK构建
-# dh = DataHub(access_id, access_key, endpoint)                                                   # Json
-# dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.PB)           # Pb
-# dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.BATCH)        # Batch
-
-# dh = DataHub.from_access(access_id, access_key, endpoint)
-
-# 方式二 (推荐). 使用零信任凭证构建 (credential构建方式可参考 https://github.com/aliyun/credentials-python/ )
+# 方式一 (推荐). 使用零信任凭证构建 (credential构建方式可参考 https://github.com/aliyun/credentials-python/ )
+# 1. 环境变量
 config = CredConfig(
     type='access_key',
     access_key_id=os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_ID'),
@@ -49,6 +77,17 @@ config = CredConfig(
 )
 credential = CredClient(config)
 dh = DataHub.from_credential(credential, endpoint)
+
+# 方式二. 直接使用AK构建
+# dh = DataHub(access_id, access_key, endpoint)                                                 # Json
+# dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.PB)           # Pb
+# dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.BATCH)        # Batch
+
+# dh = DataHub.from_access(access_id, access_key, endpoint)
+
+# 方式三. 使用STSToken构建
+# tmp_access_id, tmp_access_key, tmp_token = get_sts_token()
+# dh = DataHub.from_access(access_id=tmp_access_id, access_key=tmp_access_key, endpoint=endpoint, security_token=tmp_token)
 
 # ===================== 创建project =====================
 project_name = 'project'
