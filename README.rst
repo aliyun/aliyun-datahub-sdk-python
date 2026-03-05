@@ -83,10 +83,25 @@ Usage
 .. code:: python
 
     from datahub import DataHub
-    dh = DataHub('**your-access-id**', '**your-secret-access-key**', endpoint='**your-end-point**')
+
+    # with credential (https://github.com/aliyun/credentials-python/)
+    from alibabacloud_credentials.client import Client as CredClient
+    from alibabacloud_credentials.models import Config as CredConfig
+    config = CredConfig(
+        type='access_key',
+        access_key_id=os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_ID'),
+        access_key_secret=os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_SECRET'),
+    )
+    credential = CredClient(config)
+    dh = DataHub.from_credential(credential, '**your-end-point**')
+
+    # with access
+    # dh = DataHub('**your-access-id**', '**your-secret-access-key**', endpoint='**your-end-point**')
+    # dh = DataHub.from_access('**your-access-id**', '**your-secret-access-key**', endpoint='**your-end-point**')
 
     # with security token
     # dh = DataHub('**your-access-id**', '**your-secret-access-key**', endpoint='**your-end-point**', security_token='**your-security-token**')
+    # dh = DataHub.from_access('**your-access-id**', '**your-secret-access-key**', endpoint='**your-end-point**', security_token='**your-security-token**')
 
     # ============================= create project =============================
 
