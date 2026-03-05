@@ -17,6 +17,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import os
 import sys
 import time
 import traceback
@@ -24,8 +25,8 @@ import traceback
 from datahub import DataHub, DatahubProtocolType
 from datahub.exceptions import ResourceExistException, DatahubException
 from datahub.models import FieldType, RecordSchema, TupleRecord, BlobRecord, CursorType, RecordType
-from alibabacloud_credentials.client import Client
-from alibabacloud_credentials.models import Config
+from alibabacloud_credentials.client import Client as CredClient
+from alibabacloud_credentials.models import Config as CredConfig
 
 access_id = ''
 access_key = ''
@@ -34,19 +35,20 @@ endpoint = ''
 # ===================== 构建DataHub =====================
 
 # 方式一. 直接使用AK构建
-dh = DataHub(access_id, access_key, endpoint)                                                   # Json
+# dh = DataHub(access_id, access_key, endpoint)                                                   # Json
 # dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.PB)           # Pb
 # dh = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.BATCH)        # Batch
 
+# dh = DataHub.from_access(access_id, access_key, endpoint)
+
 # 方式二 (推荐). 使用零信任凭证构建 (credential构建方式可参考 https://github.com/aliyun/credentials-python/ )
-config = Config(
-    type='sts',                           # credential type
-    access_key_id='accessKeyId',          # AccessKeyId
-    access_key_secret='accessKeySecret',  # AccessKeySecret
-    security_token='securityToken'        # STS Token
+config = CredConfig(
+    type='access_key',
+    access_key_id=os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_ID'),
+    access_key_secret=os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_SECRET'),
 )
-credential = Client(config)
-dh2 = DataHub("", "", endpoint, credential=credential)
+credential = CredClient(config)
+dh = DataHub.from_credential(credential, endpoint)
 
 # ===================== 创建project =====================
 project_name = 'project'

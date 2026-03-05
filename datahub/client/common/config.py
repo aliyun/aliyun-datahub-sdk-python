@@ -28,15 +28,17 @@ class Utils:
 
 
 class DatahubConfig:
+    """Base configuration class for Datahub client"""
 
-    __slots__ = '_access_id', '_access_key', '_endpoint', '_protocol_type', '_compress_format'
+    __slots__ = '_access_id', '_access_key', '_endpoint', '_protocol_type', '_compress_format', '_credential'
 
-    def __init__(self, access_id, access_key, endpoint, protocol_type, compress_format):
+    def __init__(self, access_id, access_key, endpoint, protocol_type, compress_format, credential=None):
         self._access_id = access_id
         self._access_key = access_key
         self._endpoint = endpoint
         self._protocol_type = protocol_type
         self._compress_format = compress_format
+        self._credential = credential
 
     @property
     def access_id(self):
@@ -78,18 +80,37 @@ class DatahubConfig:
     def compress_format(self, value):
         self._compress_format = value
 
+    @property
+    def credential(self):
+        return self._credential
+
+    @credential.setter
+    def credential(self, value):
+        self._credential = value
+
 
 class CommonConfig(DatahubConfig):
+    """Common configuration with shared settings for producer and consumer"""
 
     __slots__ = '_retry_times', '_async_thread_limit', '_thread_queue_limit', '_logging_level', '_logging_filename'
 
-    def __init__(self, access_id, access_key, endpoint, protocol_type, compress_format):
-        super().__init__(access_id, access_key, endpoint, protocol_type, compress_format)
+    def __init__(self, access_id, access_key, endpoint, protocol_type, compress_format, credential=None):
+        super().__init__(access_id, access_key, endpoint, protocol_type, compress_format, credential)
         self._retry_times = Constant.DEFAULT_RETRY_TIMES
         self._async_thread_limit = Constant.DEFAULT_ASYNC_THREAD_LIMIT
         self._thread_queue_limit = Constant.DEFAULT_THREAD_QUEUE_LIMIT
         self._logging_level = Constant.DEFAULT_LOGING_LEVEL
         self._logging_filename = Constant.DEFAULT_LOGING_FILENAME
+
+    @classmethod
+    def from_access(cls, access_id, access_key, endpoint, protocol_type=Constant.DEFAULT_PROTOCOL_TYPE,
+                    compress_format=Constant.DEFAULT_COMPRESS_FORMAT):
+        return cls(access_id, access_key, endpoint, protocol_type, compress_format)
+
+    @classmethod
+    def from_credential(cls, credential, endpoint, protocol_type=Constant.DEFAULT_PROTOCOL_TYPE,
+                        compress_format=Constant.DEFAULT_COMPRESS_FORMAT):
+        return cls("", "", endpoint, protocol_type, compress_format, credential)
 
     @property
     def retry_times(self):
@@ -134,7 +155,7 @@ class CommonConfig(DatahubConfig):
 
 class ConsumerConfig(CommonConfig):
     """
-    Config for datahub producer
+    Config for datahub consumer
 
     Members:
         access_id (:class:`string`): Aliyun access id
@@ -169,8 +190,8 @@ class ConsumerConfig(CommonConfig):
     __slots__ = '_auto_ack_offset', '_session_timeout', '_max_record_buffer_size', '_fetch_limit'
 
     def __init__(self, access_id, access_key, endpoint, protocol_type=Constant.DEFAULT_PROTOCOL_TYPE,
-                 compress_format=Constant.DEFAULT_COMPRESS_FORMAT):
-        super().__init__(access_id, access_key, endpoint, protocol_type, compress_format)
+                 compress_format=Constant.DEFAULT_COMPRESS_FORMAT, credential=None):
+        super().__init__(access_id, access_key, endpoint, protocol_type, compress_format, credential)
         self._auto_ack_offset = Constant.DEFAULT_AUTO_ACK_OFFSET
         self._session_timeout = Constant.DEFAULT_SESSION_TIMEOUT
         self._max_record_buffer_size = Constant.DEFAULT_MAX_RECORD_BUFFER_SIZE
@@ -247,8 +268,8 @@ class ProducerConfig(CommonConfig):
                 '_max_async_buffer_time', '_max_record_pack_queue_limit'
 
     def __init__(self, access_id, access_key, endpoint, protocol_type=Constant.DEFAULT_PROTOCOL_TYPE,
-                 compress_format=Constant.DEFAULT_COMPRESS_FORMAT):
-        super().__init__(access_id, access_key, endpoint, protocol_type, compress_format)
+                 compress_format=Constant.DEFAULT_COMPRESS_FORMAT, credential=None):
+        super().__init__(access_id, access_key, endpoint, protocol_type, compress_format, credential)
         self._max_async_buffer_records = Constant.MAX_ASYNC_BUFFER_RECORD_COUNT
         self._max_async_buffer_size = Constant.MAX_ASYNC_BUFFER_SIZE
         self._max_async_buffer_time = Constant.MAX_ASYNC_BUFFER_TIMEOUT_S

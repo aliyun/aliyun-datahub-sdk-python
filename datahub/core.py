@@ -88,6 +88,14 @@ class DataHub(object):
             protocol_type = kwargs.pop("protocol_type")
         self._datahub_impl = get_client(protocol_type)(access_id, access_key, endpoint, compress_format, credential=credential, **kwargs)
 
+    @classmethod
+    def from_access(cls, access_id, access_key, endpoint, compress_format=CompressFormat.LZ4, **kwargs):
+        return cls(access_id, access_key, endpoint, compress_format, **kwargs)
+
+    @classmethod
+    def from_credential(cls, credential, endpoint, compress_format=CompressFormat.LZ4, **kwargs):
+        return cls("", "", endpoint, compress_format, credential, **kwargs)
+
     def list_project(self):
         """
         List all project names

@@ -24,6 +24,8 @@ from datahub.core import DatahubProtocolType
 from datahub.exceptions import DatahubException
 from datahub.models.compress import CompressFormat
 from datahub.client import DatahubConsumer, ConsumerConfig
+from alibabacloud_credentials.client import Client as CredClient
+from alibabacloud_credentials.models import Config as CredConfig
 
 
 parser = configparser.ConfigParser()
@@ -54,7 +56,18 @@ max_record_buffer_size = int(max_record_buffer_size) if len(max_record_buffer_si
 fetch_limit = parser.get("consumer", "fetch_limit")
 fetch_limit = int(fetch_limit) if len(fetch_limit) > 0 else -1
 
-consumer_config = ConsumerConfig(access_id, access_key, endpoint)
+# 方式一. 直接使用AK构建
+# consumer_config = ConsumerConfig(access_id, access_key, endpoint)
+# consumer_config = ConsumerConfig.from_access(access_id, access_key, endpoint)
+
+# 方式二 (推荐). 使用零信任凭证构建 (credential构建方式可参考 https://github.com/aliyun/credentials-python/ )
+config = CredConfig(
+    type='access_key',
+    access_key_id=os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_ID'),
+    access_key_secret=os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_SECRET'),
+)
+credential = CredClient(config)
+consumer_config = ConsumerConfig.from_credential(credential, endpoint)
 
 if retry_times > 0:
     consumer_config.retry_times = retry_times

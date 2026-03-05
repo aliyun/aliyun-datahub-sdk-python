@@ -137,11 +137,6 @@ class AliyunAccount(Account):
         :param request: request object
         :return: none
         """
-        url = request.path_url
-        url_components = urlparse(unquote(url))
-        canonical_str = self._build_canonical_str(url_components, request)
-        logger.debug('canonical string: ' + canonical_str)
-
         if self._credential is None:
             access_id = self.access_id
             access_key = self.access_key
@@ -149,6 +144,14 @@ class AliyunAccount(Account):
             credential = self._credential.get_credential()
             access_id = credential.get_access_key_id()
             access_key = credential.get_access_key_secret()
+            security_token = credential.get_security_token()
+            if security_token:
+                request.headers[Headers.SECURITY_TOKEN] = security_token
+
+        url = request.path_url
+        url_components = urlparse(unquote(url))
+        canonical_str = self._build_canonical_str(url_components, request)
+        logger.debug('canonical string: ' + canonical_str)
 
         sign = to_str(hmac_sha1(access_key, canonical_str))
         auth_str = 'DATAHUB %s:%s' % (access_id, sign)

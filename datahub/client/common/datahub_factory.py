@@ -40,6 +40,7 @@ class DatahubFactory:
                         endpoint=datahub_config.endpoint,
                         protocol_type=datahub_config.protocol_type,
                         compress_format=datahub_config.compress_format,
+                        credential=datahub_config.credential,
                         use_client=True
                     )
         return DatahubFactory._datahub_client_pool.get(key)

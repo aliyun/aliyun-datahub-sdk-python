@@ -25,6 +25,8 @@ from datahub.core import DatahubProtocolType
 from datahub.exceptions import DatahubException
 from datahub.models import BlobRecord, TupleRecord, FieldType, CompressFormat, RecordType
 from datahub.client import ProducerConfig, DatahubProducer
+from alibabacloud_credentials.client import Client as CredClient
+from alibabacloud_credentials.models import Config as CredConfig
 
 
 RECORD_NUM = 5
@@ -57,7 +59,18 @@ max_async_buffer_time = int(max_async_buffer_time) if len(max_async_buffer_time)
 max_record_pack_queue_limit = parser.get("producer", "max_record_pack_queue_limit")
 max_record_pack_queue_limit = int(max_record_pack_queue_limit) if len(max_record_pack_queue_limit) > 0 else -1
 
-producer_config = ProducerConfig(access_id, access_key, endpoint)
+# 方式一. 直接使用AK构建
+# producer_config = ProducerConfig(access_id, access_key, endpoint)
+# producer_config = ProducerConfig.from_access(access_id, access_key, endpoint)
+
+# 方式二 (推荐). 使用零信任凭证构建 (credential构建方式可参考 https://github.com/aliyun/credentials-python/ )
+config = CredConfig(
+    type='access_key',
+    access_key_id=os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_ID'),
+    access_key_secret=os.environ.get('ALIBABA_CLOUD_ACCESS_KEY_SECRET'),
+)
+credential = CredClient(config)
+producer_config = ProducerConfig.from_credential(credential, endpoint)
 
 if retry_times > 0:
     producer_config.retry_times = retry_times
