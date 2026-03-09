@@ -311,15 +311,16 @@ class RestClient(object):
             try:
                 content_data = json.loads(to_text(content))
                 error_code = content_data['ErrorCode']
-                error_msg = content_data['ErrorMessage']
+                error_msg = content_data.get('ErrorMessage', '')
+                error_detail = content_data.get('ErrorDetail', '')
             except Exception:
                 logger.error('Decode json message error, content: %s' % to_text(content))
                 raise DatahubException('Decode json message error, content: %s' % to_text(content),
                                        status_code, request_id, '')
 
-            logger.error("status_code: %d, request_id: %s, error_code: %s, error_msg: %s"
-                         % (status_code, request_id, error_code, error_msg))
-            self._exception_handler.raise_exception(error_msg, status_code, request_id, error_code)
+            logger.error("status_code: %d, request_id: %s, error_code: %s, error_msg: %s, error_detail: %s"
+                         % (status_code, request_id, error_code, error_msg, error_detail))
+            self._exception_handler.raise_exception(error_msg, status_code, request_id, error_code, error_detail)
 
         return content, resp.headers
 

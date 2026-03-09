@@ -23,16 +23,17 @@ class DatahubException(Exception):
     There was an base exception class that occurred while handling your request to datahub server.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, error_detail=None):
         super(DatahubException, self).__init__(error_msg)
         self.status_code = status_code
         self.request_id = request_id
         self.error_code = error_code
         self.error_msg = error_msg
+        self.error_detail = error_detail
 
     def __str__(self):
-        return "status_code: %d, request_id: %s, error_code: %s, error_msg: %s" \
-               % (self.status_code, self.request_id, self.error_code, self.error_msg)
+        return "status_code: %d, request_id: %s, error_code: %s, error_msg: %s, error_detail: %s" \
+               % (self.status_code, self.request_id, self.error_code, self.error_msg, self.error_detail)
 
     # A long list of server defined exceptions
 
@@ -42,8 +43,8 @@ class ResourceExistException(DatahubException):
     The exception is raised while Datahub Object that you are creating is already exist.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(ResourceExistException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(ResourceExistException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class ResourceNotFoundException(DatahubException):
@@ -51,8 +52,8 @@ class ResourceNotFoundException(DatahubException):
     The exception is raised while Datahub Object that you are handling is not exist.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(ResourceNotFoundException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(ResourceNotFoundException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class InvalidParameterException(DatahubException):
@@ -60,8 +61,8 @@ class InvalidParameterException(DatahubException):
     The exception is raised while that your handling request parameter is invalid.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(InvalidParameterException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(InvalidParameterException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class InvalidOperationException(DatahubException):
@@ -69,8 +70,8 @@ class InvalidOperationException(DatahubException):
     The operation of shard is not support yet.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(InvalidOperationException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(InvalidOperationException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class OffsetResetException(InvalidOperationException):
@@ -78,8 +79,8 @@ class OffsetResetException(InvalidOperationException):
     The offset is reset.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(OffsetResetException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(OffsetResetException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class LimitExceededException(DatahubException):
@@ -87,8 +88,8 @@ class LimitExceededException(DatahubException):
     Too many request.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(LimitExceededException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(LimitExceededException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class InternalServerException(DatahubException):
@@ -96,8 +97,8 @@ class InternalServerException(DatahubException):
     The Datahub server occurred error.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(InternalServerException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(InternalServerException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class AuthorizationFailedException(DatahubException):
@@ -105,8 +106,8 @@ class AuthorizationFailedException(DatahubException):
     The authorization failed error.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(AuthorizationFailedException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(AuthorizationFailedException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class NoPermissionException(DatahubException):
@@ -114,8 +115,8 @@ class NoPermissionException(DatahubException):
     The operation without permission.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(NoPermissionException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(NoPermissionException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class ShardSealedException(DatahubException):
@@ -123,8 +124,8 @@ class ShardSealedException(DatahubException):
     The Shard has been sealed.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(ShardSealedException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(ShardSealedException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class SeekOutOfRangeException(DatahubException):
@@ -132,8 +133,8 @@ class SeekOutOfRangeException(DatahubException):
     Offset seek out of range
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(SeekOutOfRangeException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(SeekOutOfRangeException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class InvalidCursorException(DatahubException):
@@ -141,8 +142,8 @@ class InvalidCursorException(DatahubException):
     The cursor is invalid.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(InvalidCursorException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(InvalidCursorException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class SubscriptionOfflineException(DatahubException):
@@ -150,8 +151,8 @@ class SubscriptionOfflineException(DatahubException):
     The cursor is invalid.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(SubscriptionOfflineException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(SubscriptionOfflineException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class TimeoutException(DatahubException):
@@ -159,8 +160,8 @@ class TimeoutException(DatahubException):
     Timeout.
     """
 
-    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None):
-        super(TimeoutException, self).__init__(error_msg, status_code, request_id, error_code)
+    def __init__(self, error_msg, status_code=-1, request_id=None, error_code=None, **kwargs):
+        super(TimeoutException, self).__init__(error_msg, status_code, request_id, error_code, **kwargs)
 
 
 class ExceptionHandler(object):
@@ -196,8 +197,9 @@ class ExceptionHandler(object):
         'ListSubscriptionOutofRange': InvalidParameterException,
     }
 
-    def raise_exception(self, error_msg, status_code, request_id, error_code):
-        raise self.error_code_dict.get(error_code, DatahubException)(error_msg, status_code, request_id, error_code)
+    def raise_exception(self, error_msg, status_code, request_id, error_code, error_detail):
+        raise self.error_code_dict.get(error_code, DatahubException)(
+            error_msg, status_code, request_id, error_code, error_detail=error_detail)
 
 
 exception_handler = ExceptionHandler()
