@@ -512,8 +512,8 @@ class MergeShardResult(ShardBase, Result):
     __slots__ = ('_shard_id', '_begin_hash_key', '_end_hash_key')
 
     def __init__(self, shard_id, begin_hash_key, end_hash_key, request_id):
-        super(Result, self).__init__(request_id)
-        super(MergeShardResult, self).__init__(shard_id, begin_hash_key, end_hash_key)
+        ShardBase.__init__(self, shard_id, begin_hash_key, end_hash_key)
+        Result.__init__(self, request_id)
 
     @classmethod
     def parse_content(cls, content, headers, **kwargs):
@@ -1521,9 +1521,9 @@ class GetSubscriptionResult(Subscription, Result):
 
     def __init__(self, topic_name, sub_id, comment, create_time, is_owner, last_modify_time,
                  state, sub_type, request_id):
-        super(Result, self).__init__(request_id)
-        super(GetSubscriptionResult, self).__init__(comment, create_time, is_owner, last_modify_time,
-                                                    state, sub_id, topic_name, sub_type)
+        Subscription.__init__(self, comment, create_time, is_owner, last_modify_time,
+                              state, sub_id, topic_name, sub_type)
+        Result.__init__(self, request_id)
 
     @classmethod
     def parse_content(cls, content, headers, **kwargs):
