@@ -16,6 +16,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
 import json
 import sys
 
@@ -23,8 +24,8 @@ sys.path.append('./')
 from httmock import HTTMock
 
 from datahub import DataHub
-from datahub.exceptions import ResourceNotFoundException, InvalidOperationException, InvalidParameterException, \
-    LimitExceededException, DatahubException, ShardSealedException
+from datahub.exceptions import ResourceNotFoundException, InvalidParameterException, LimitExceededException, \
+    DatahubException, ShardSealedException
 from datahub.models import ShardState
 from .unittest_util import gen_mock_api
 

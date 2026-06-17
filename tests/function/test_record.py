@@ -24,7 +24,7 @@ import time
 
 from six.moves import configparser
 
-from datahub import DataHub
+from datahub import DataHub, DatahubProtocolType
 from datahub.exceptions import ResourceExistException, InvalidOperationException, InvalidParameterException, \
     ResourceNotFoundException
 from datahub.models import RecordSchema, FieldType, TupleRecord, BlobRecord, CursorType, CompressFormat
@@ -49,14 +49,14 @@ if not access_id or not access_key or not endpoint:
     print("[access_id, access_key, endpoint] must be set in datahub.ini!")
     sys.exit(-1)
 
-dh = DataHub(access_id, access_key, endpoint, enable_pb=False)
-dh_lz4 = DataHub(access_id, access_key, endpoint, enable_pb=False, compress_format=CompressFormat.LZ4)
-dh_zlib = DataHub(access_id, access_key, endpoint, enable_pb=False, compress_format=CompressFormat.ZLIB)
-dh_deflate = DataHub(access_id, access_key, endpoint, enable_pb=False, compress_format=CompressFormat.DEFLATE)
-dh_pb = DataHub(access_id, access_key, endpoint, enable_pb=True)
-dh_pb_lz4 = DataHub(access_id, access_key, endpoint, enable_pb=True, compress_format=CompressFormat.LZ4)
-dh_pb_zlib = DataHub(access_id, access_key, endpoint, enable_pb=True, compress_format=CompressFormat.ZLIB)
-dh_pb_deflate = DataHub(access_id, access_key, endpoint, enable_pb=True, compress_format=CompressFormat.DEFLATE)
+dh            = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.JSON)
+dh_lz4        = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.JSON, compress_format=CompressFormat.LZ4)
+dh_zlib       = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.JSON, compress_format=CompressFormat.ZLIB)
+dh_deflate    = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.JSON, compress_format=CompressFormat.DEFLATE)
+dh_pb         = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.PB)
+dh_pb_lz4     = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.PB, compress_format=CompressFormat.LZ4)
+dh_pb_zlib    = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.PB, compress_format=CompressFormat.ZLIB)
+dh_pb_deflate = DataHub(access_id, access_key, endpoint, protocol_type=DatahubProtocolType.PB, compress_format=CompressFormat.DEFLATE)
 
 
 def clean_topic(datahub_client, project_name, force=False):

@@ -3,12 +3,29 @@ access_id =
 access_key =
 endpoint =
 
-meter_test_project_name =
-meter_test_topic_name =
-meter_test_shard_id =
+project_name =
+topic_name =
+shard_id =
+sub_id =
 
 connector_test_project_name =
 connector_test_topic_name =
+
+[common]
+retry_times =
+async_thread_number =
+
+[consumer]
+auto_ack_offset =
+session_timeout =
+fetch_limit =
+max_async_fetch_thread_limit =
+max_record_buffer_size =
+
+[producer]
+max_async_buffer_records =
+max_async_buffer_size =
+max_async_buffer_time =
 
 [connector]
 project_name =

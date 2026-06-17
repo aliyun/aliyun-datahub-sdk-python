@@ -304,7 +304,7 @@ class DataHubJson(object):
         request_param = PutRecordsRequestParams(record_list)
 
         content, headers = self._rest_client.post(url, data=request_param.content(), headers=request_param.extra_headers(),
-                                                  compress_format=self._compress_format)
+                                         compress_format=self._compress_format)
 
         result = PutRecordsResult.parse_content(content, headers=headers)
 
