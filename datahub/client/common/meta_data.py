@@ -19,14 +19,15 @@
 
 
 import logging
-import atomic
-from datahub.models import RecordType
+
 from datahub.exceptions import DatahubException
-from .timer import Timer
-from .constant import Constant
-from .datahub_factory import DatahubFactory
+from datahub.models import RecordType
+from datahub.utils import AtomicLong
 from ..consumer.message_reader import MessageReader
 from ..producer.message_writer import MessageWriter
+from .constant import Constant
+from .datahub_factory import DatahubFactory
+from .timer import Timer
 
 
 class MetaData:
@@ -44,7 +45,7 @@ class MetaData:
         self._topic_meta = self.__init_topic_meta(project_name, topic_name)
 
         # Update shard
-        self._updating = atomic.AtomicLong(0)
+        self._updating = AtomicLong(0)
         self._shard_meta_map = dict()
         self._timer = Timer(Constant.SHARD_META_REFRESH_TIMEOUT)
         self.__update_shard_meta_once()

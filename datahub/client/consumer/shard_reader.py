@@ -21,13 +21,14 @@
 import logging
 import queue
 import threading
-import atomic
 from enum import Enum
+
 from datahub.exceptions import InvalidParameterException, DatahubException
-from .message_key import MessageKey
-from ..common.timer import Timer
+from datahub.utils import AtomicLong
 from ..common.constant import Constant
 from ..common.offset_meta import ConsumeOffset
+from ..common.timer import Timer
+from .message_key import MessageKey
 
 
 class CompleteType(Enum):
@@ -100,12 +101,12 @@ class ShardReader:
         self._shard_id = shard_id
         self._read_offset = offset
         self._fetch_num = fetch_num
-        self._has_read_count = atomic.AtomicLong(0)
+        self._has_read_count = AtomicLong(0)
 
         self._read_lock = threading.Lock()
         self._fetch_lock = threading.Condition()
         self._cache_record_queue = queue.Queue()
-        self._remain_records = atomic.AtomicLong(0)
+        self._remain_records = AtomicLong(0)
 
     def close(self):
         self._closed = True

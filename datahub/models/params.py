@@ -23,12 +23,12 @@ import abc
 import json
 
 import six
-from cprotobuf.internal import encode_data
+from ..proto.proto_utils import encode_proto
 
 from ..batch.batch_serializer import BatchSerializer
 from ..batch.utils import SchemaObject
 from ..models import CursorType, RecordType, RecordSchema
-from ..proto.datahub_record_proto_pb import PutRecordsRequest, GetRecordsRequest, PutBinaryRecordsRequest
+from ..proto.datahub_pb2 import PutRecordsRequest, GetRecordsRequest, PutBinaryRecordsRequest
 from ..rest import ContentType, Headers
 from ..utils import pb_message_wrap
 
@@ -389,7 +389,7 @@ class PutPBRecordsRequestParams(PutRecordsRequestParams):
         }
         for record in self._record_list:
             pb_put_record_request['records'].append(record.to_pb_record_entry())
-        pb_data = encode_data(PutRecordsRequest, pb_put_record_request)
+        pb_data = encode_proto(PutRecordsRequest, pb_put_record_request)
         return pb_message_wrap(pb_data)
 
     @staticmethod
@@ -418,7 +418,7 @@ class PutBatchRecordsRequestParams(PutRecordsRequestParams):
         batch_put_record_request = {
             'records': [{'data': record_data}]
         }
-        batch_data = encode_data(PutBinaryRecordsRequest, batch_put_record_request)
+        batch_data = encode_proto(PutBinaryRecordsRequest, batch_put_record_request)
         return pb_message_wrap(batch_data)
 
     @staticmethod
@@ -476,7 +476,7 @@ class GetPBRecordsRequestParams(GetRecordsRequestParams):
             'cursor': self._cursor,
             'limit': self._limit_num
         }
-        pb_data = encode_data(GetRecordsRequest, pb_get_record_request)
+        pb_data = encode_proto(GetRecordsRequest, pb_get_record_request)
         return pb_message_wrap(pb_data)
 
     @staticmethod
@@ -499,7 +499,7 @@ class GetBatchRecordsRequestParams(GetRecordsRequestParams):
             'cursor': self._cursor,
             'limit': self._limit_num
         }
-        batch_data = encode_data(GetRecordsRequest, batch_get_record_request)
+        batch_data = encode_proto(GetRecordsRequest, batch_get_record_request)
         return pb_message_wrap(batch_data)
 
     @staticmethod

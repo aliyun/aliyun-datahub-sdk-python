@@ -33,7 +33,7 @@ from .shard import Shard, ShardBase, ShardContext
 from .subscription import Subscription, OffsetWithBatchIndex
 from ..batch.batch_serializer import BatchSerializer
 from ..batch.utils import SchemaObject
-from ..proto.datahub_record_proto_pb import GetRecordsResponse, PutRecordsResponse, GetBinaryRecordsResponse
+from ..proto.datahub_pb2 import GetRecordsResponse, PutRecordsResponse, GetBinaryRecordsResponse
 from ..rest import Headers
 from ..utils import to_text, unwrap_pb_frame
 

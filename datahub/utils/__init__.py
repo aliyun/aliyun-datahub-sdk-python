@@ -21,3 +21,5 @@ from .codec import *
 from .constants import *
 from .converters import *
 from .validator import *
+
+from .atomic import AtomicLong

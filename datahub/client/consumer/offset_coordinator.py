@@ -18,11 +18,11 @@
 # under the License.
 
 
-import atomic
 from datahub.exceptions import DatahubException
-from .offset_manager import OffsetManager
+from datahub.utils import AtomicLong
 from ..common.offset_meta import ConsumeOffset
 from ..common.shard_coordinator import ShardCoordinator
+from .offset_manager import OffsetManager
 
 
 class OffsetCoordinator(ShardCoordinator):
@@ -33,7 +33,7 @@ class OffsetCoordinator(ShardCoordinator):
         self._sub_offline = False
         self._sub_deleted = False
         self._offset_not_ack = False
-        self._offset_reset = atomic.AtomicLong(0)
+        self._offset_reset = AtomicLong(0)
 
         self._auto_ack_offset = consumer_config.auto_ack_offset
         self._max_record_buffer_size = consumer_config.max_record_buffer_size

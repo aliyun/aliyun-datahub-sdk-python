@@ -32,7 +32,7 @@ from datahub import DataHub, DatahubProtocolType
 from datahub.exceptions import ResourceNotFoundException, InvalidParameterException,\
     LimitExceededException, ShardSealedException, InvalidCursorException
 from datahub.models import RecordSchema, FieldType, BlobRecord, TupleRecord, CompressFormat
-from datahub.proto.datahub_record_proto_pb import GetRecordsRequest, PutBinaryRecordsRequest
+from datahub.proto.datahub_pb2 import GetRecordsRequest, PutBinaryRecordsRequest
 from datahub.utils import unwrap_pb_frame, to_binary
 from unittest_util import gen_batch_mock_api, _TESTS_PATH
 

@@ -18,13 +18,13 @@
 # under the License.
 
 
-import atomic
+from datahub.utils import AtomicLong
 
 
 class MessageKey:
 
     def __init__(self, shard_id, offset):
-        self._ready = atomic.AtomicLong(0)
+        self._ready = AtomicLong(0)
         self._shard_id = shard_id
         self._offset = offset
 

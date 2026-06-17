@@ -18,14 +18,15 @@
 # under the License.
 
 
-import time
-import atomic
 import logging
 import threading
+import time
+
 from datahub.exceptions import DatahubException
-from .write_result import WriteResult
-from .record_pack_queue import RecordPackQueue
+from datahub.utils import AtomicLong
 from ..common.datahub_factory import DatahubFactory
+from .record_pack_queue import RecordPackQueue
+from .write_result import WriteResult
 
 
 class ShardWriter:
@@ -43,10 +44,10 @@ class ShardWriter:
         self._shard_id = shard_id
         self._max_retry_times = producer_config.retry_times
 
-        self._task_num = atomic.AtomicLong(0)
+        self._task_num = AtomicLong(0)
         self._condition = threading.Condition()
 
-        self._has_write_count = atomic.AtomicLong(0)
+        self._has_write_count = AtomicLong(0)
         self._datahub_client = DatahubFactory.create_datahub_client(producer_config)
 
         self._record_package_queue = RecordPackQueue(producer_config.max_async_buffer_size, producer_config.max_async_buffer_records,
@@ -100,7 +101,7 @@ class ShardWriter:
                     self._logger.warning("Send next task fail. key: {}, shard_id: {}, task num: {}"
                                          .format(self._uniq_key, self._shard_id, self._task_num.value))
                     raise DatahubException("Send next task fail. key: {}, shard_id: {}".format(self._uniq_key, self._shard_id))
-                self._task_num += 1
+                self._task_num.increment_and_get()
                 self._logger.debug("Send next task once. key: {}, shard_id: {}, task_num: {}"
                                    .format(self._uniq_key, self._shard_id, self._task_num.value))
 
@@ -109,7 +110,7 @@ class ShardWriter:
         while True:
             try:
                 self._message_writer.put_record_by_shard(self._shard_id, records)
-                self._has_write_count += len(records)
+                self._has_write_count.add_and_get(len(records))
                 return
             except DatahubException as e:
                 self._logger.warning("Write records fail. key: {}, shard_id: {}, records size: {}, max retry time: {}, this time: {}, DatahubException: {}"
@@ -155,6 +156,6 @@ class ShardWriter:
 
     def __task_done(self):
         self.__send_next_task()
-        self._task_num -= 1
+        self._task_num.decrement_and_get()
         with self._condition:
             self._condition.notify_all()
