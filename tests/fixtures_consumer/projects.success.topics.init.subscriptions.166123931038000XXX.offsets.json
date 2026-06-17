@@ -1,0 +1,11 @@
+{
+  "Offsets":{
+    "0":{
+      "Sequence": -1,
+      "Timestamp": -1,
+      "Version": 0,
+      "SessionId": 0,
+      "BatchIndex": 0
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+    "PageCount": 1,
+    "PageNumber": 1, 
+    "PageSize": 1, 
+    "RecordSchemaList": [
+        {
+            "CreateTime": 1658132195, 
+            "Creator": "", 
+            "RecordSchema": "{\"fields\": [{\"name\": \"bigint_field\", \"type\": \"bigint\", \"comment\": \"\"}, {\"name\": \"string_field\", \"type\": \"string\", \"comment\": \"\"}, {\"name\": \"double_field\", \"type\": \"double\", \"comment\": \"\"}, {\"name\": \"bool_field\", \"type\": \"boolean\", \"comment\": \"\"}, {\"name\": \"time_field\", \"type\": \"timestamp\", \"comment\": \"\"}]}",
+            "VersionId": 1
+        }
+    ],
+    "TotalCount": 1
+}
