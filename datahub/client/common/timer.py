@@ -32,7 +32,7 @@ class Timer:
         self.reset(timeout)
 
     def reset(self, timeout=None):
-        if timeout:
+        if timeout is not None:
             self._timeout = timeout
         self._start_time = Timer.get_curr_time()
         self._deadline_time = self._start_time + self._timeout

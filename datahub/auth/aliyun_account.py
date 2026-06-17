@@ -47,7 +47,7 @@ class AliyunAccount(Account):
     Aliyun account implement base from :class:`datahub.auth.Account`
     """
 
-    __slots__ = '_access_id', '_access_key', '_security_token'
+    __slots__ = '_access_id', '_access_key', '_security_token', '_credential'
 
     def __init__(self, *args, **kwargs):
         super(AliyunAccount, self).__init__(*args, **kwargs)

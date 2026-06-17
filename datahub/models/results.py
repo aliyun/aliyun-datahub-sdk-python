@@ -1534,8 +1534,9 @@ class GetSubscriptionResult(Subscription, Result):
         create_time = content.get('CreateTime', 0)
         is_owner = content.get('Owner', '')
         last_modify_time = content.get('LastModifyTime', '')
+        state = content.get('State', 0)
         sub_type = content.get('Type', 0)
-        return cls(topic_name, sub_id, comment, create_time, is_owner, last_modify_time, sub_type, headers.get(Headers.REQUEST_ID, ''))
+        return cls(topic_name, sub_id, comment, create_time, is_owner, last_modify_time, state, sub_type, headers.get(Headers.REQUEST_ID, ''))
 
     def to_json(self):
         return super(GetSubscriptionResult, self).to_json()
@@ -1731,7 +1732,7 @@ class SyncGroupResult(Result):
     """
     Result of sync group api
     """
-    def __int__(self, request_id):
+    def __init__(self, request_id):
         super().__init__(request_id)
 
     @classmethod
@@ -1746,7 +1747,7 @@ class LeaveGroupResult(Result):
     """
     Result of leave group api
     """
-    def __int__(self, request_id):
+    def __init__(self, request_id):
         super().__init__(request_id)
 
     @classmethod
