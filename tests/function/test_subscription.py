@@ -109,6 +109,43 @@ class TestSubscription:
             clean_topic(dh, project_name, True)
             dh.delete_project(project_name)
 
+    def test_create_subscription_with_sub_id(self):
+        project_name = "subscription_test_p"
+        topic_name = "topic_test_t%d_5" % int(time.time())
+
+        shard_count = 3
+        life_cycle = 7
+        record_schema = RecordSchema.from_lists(
+            ['bigint_field', 'string_field', 'double_field', 'bool_field', 'event_time1'],
+            [FieldType.BIGINT, FieldType.STRING, FieldType.DOUBLE, FieldType.BOOLEAN, FieldType.TIMESTAMP])
+
+        try:
+            dh.create_project(project_name, '')
+        except ResourceExistException:
+            pass
+
+        try:
+            try:
+                dh.create_tuple_topic(project_name, topic_name, shard_count, life_cycle, record_schema, '')
+            except ResourceExistException:
+                pass
+
+            # ======================= create subscription with custom sub_id =======================
+            custom_sub_id = "test_sub_%d" % int(time.time())
+            result = dh.create_subscription(project_name, topic_name, 'comment', sub_id=custom_sub_id)
+            print(result)
+            assert result.sub_id == custom_sub_id
+
+            # ======================= get subscription to verify =======================
+            sub = dh.get_subscription(project_name, topic_name, result.sub_id)
+            assert sub.sub_id == custom_sub_id
+            assert sub.comment == 'comment'
+
+            dh.delete_subscription(project_name, topic_name, result.sub_id)
+        finally:
+            clean_topic(dh, project_name, True)
+            dh.delete_project(project_name)
+
     def test_get_subscription(self):
         project_name = "subscription_test_p"
         topic_name = "topic_test_t%d_1" % int(time.time())

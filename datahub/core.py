@@ -686,21 +686,22 @@ class DataHub(object):
         """
         return self._datahub_impl.update_subscription_offset(project_name, topic_name, sub_id, offsets)
 
-    @type_assert(object, str, str, str)
-    def create_subscription(self, project_name, topic_name, comment):
+    @type_assert(object, str, str, str, str)
+    def create_subscription(self, project_name, topic_name, comment, sub_id=None):
         """
         Create subscription to a topic
 
         :param project_name: project name
         :param topic_name: topic name
         :param comment: comment for subscription
+        :param sub_id: custom subscription id, optional. If not provided, server will generate one.
         :return: create result contains subscription id
         :rtype: :class:`datahub.models.results.CreateSubscriptionResult`
         :raise: :class:`datahub.exceptions.ResourceNotFoundException` if the project or topic not exists
         :raise: :class:`datahub.exceptions.LimitExceededException` if limit of subscription number is exceeded
         :raise: :class:`datahub.exceptions.InvalidParameterException` if project_name or topic_name is empty
         """
-        return self._datahub_impl.create_subscription(project_name, topic_name, comment)
+        return self._datahub_impl.create_subscription(project_name, topic_name, comment, sub_id)
 
     @type_assert(object, str, str, str)
     def delete_subscription(self, project_name, topic_name, sub_id):

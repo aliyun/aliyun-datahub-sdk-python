@@ -921,10 +921,11 @@ class CreateSubscriptionParams(RequestParams):
     Request params of create subscription
     """
 
-    __slots__ = '_comment'
+    __slots__ = ('_comment', '_sub_id')
 
-    def __init__(self, comment):
+    def __init__(self, comment, sub_id=None):
         self._comment = comment
+        self._sub_id = sub_id
 
     @property
     def comment(self):
@@ -934,11 +935,22 @@ class CreateSubscriptionParams(RequestParams):
     def comment(self, value):
         self._comment = value
 
+    @property
+    def sub_id(self):
+        return self._sub_id
+
+    @sub_id.setter
+    def sub_id(self, value):
+        self._sub_id = value
+
     def content(self):
-        return json.dumps({
+        data = {
             'Action': 'create',
             'Comment': self._comment
-        })
+        }
+        if self._sub_id is not None:
+            data['SubId'] = self._sub_id
+        return json.dumps(data)
 
 
 class UpdateSubscriptionParams(RequestParams):

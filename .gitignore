@@ -12,3 +12,4 @@ venv*
 .eggs
 tests/datahub.ini
 pydatahub_beta.egg-info
+datahub/.core.py.swp

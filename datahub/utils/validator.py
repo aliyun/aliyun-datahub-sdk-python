@@ -94,8 +94,13 @@ def type_assert(*type_args, **type_kwargs):
                     if not isinstance(value, bound_types[name]):
                         # for python 2.7
                         if not (type(value).__name__ == "unicode" and (str in bound_types[name] if isinstance(bound_types[name], tuple) else bound_types[name] == str)):
+                            expected_type = bound_types[name]
+                            if isinstance(expected_type, tuple):
+                                expected_type_name = '/'.join(t.__name__ for t in expected_type)
+                            else:
+                                expected_type_name = expected_type.__name__
                             raise InvalidParameterException(ErrorMessage.INVALID_TYPE %
-                                                            (name, bound_types[name].__name__)
+                                                            (name, expected_type_name)
                                                             + ", input is: " + type(value).__name__)
             return func(*args, **kwargs)
 

@@ -666,14 +666,14 @@ class DataHubJson(object):
     # internal api
     # =======================================================
 
-    def create_subscription(self, project_name, topic_name, comment):
+    def create_subscription(self, project_name, topic_name, comment, sub_id=None):
         if check_empty(project_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'project_name')
         if check_empty(topic_name):
             raise InvalidParameterException(ErrorMessage.PARAMETER_EMPTY % 'topic_name')
 
         url = Path.SUBSCRIPTIONS % (project_name, topic_name)
-        request_param = CreateSubscriptionParams(comment)
+        request_param = CreateSubscriptionParams(comment, sub_id)
 
         content, headers = self._rest_client.post(url, data=request_param.content())
 
